@@ -19,14 +19,14 @@ using json = nlohmann::json;
 
 // temp variablen, die später wo anders oder per cli
 string twt = "countbased";
-string schema = "memory.pattern";
+// string schema = "memory.pattern";
 string tableName = "CrimeTable";
 string timeWindowColumnName = "id";
 int stepSize = 1;
 int timeWindowSize = 3;
 // ---------
 
-void run(json& dfaData, vector<string>& measuresClauses, vector<string>& defineClauses, int& maxRegExSymbols, Utils& utils, TrinoRestClient& client) {
+void run(string& schema, json& dfaData, vector<string>& outputTableColumns, unordered_map<string, string>& defineClauses, int& maxRegExSymbols, SQLUtils& utils, TrinoRestClient& client) {
     // ---------- initial setup ----------
     unordered_map<string, unordered_map<string, string>> dfa = parseGraph(dfaData["dfa_dict"]);
     string startState = dfaData["start_state"];
@@ -55,7 +55,6 @@ void run(json& dfaData, vector<string>& measuresClauses, vector<string>& defineC
                 string partialMatchTableName = utils.metadata[state][symbol]["table_name"];
                 string tempcond = "T.crimetype = 'Theft' AND C.crimetype = 'Credit Card Fraud' AND C.lat BETWEEN T.lat - 0.005";
                 
-                // todo noch hinzufügen für timewindow einschränkung
                 const string combinedColumnName = schema + "." + tableName + "." + timeWindowColumnName;
 
                 if(twt == "countbased") {
@@ -69,6 +68,7 @@ void run(json& dfaData, vector<string>& measuresClauses, vector<string>& defineC
                 bool isStartState = state == dfaData["start_state"];
 
                 tempcond += " " + timeWindowWhereClause;
+                // string conditionWithTWClause = defineClauses[symbol] + " " + timeWindowWhereClause;
 
                 if(isStartState) {
                     utils.insertIntoTable(partialMatchTableName, symbol, "", "", tempcond, isStartState);
@@ -93,6 +93,11 @@ int main(int argc, char* argv[]) {
     }
 
     CLIParams params = parseCommandLine(argc, argv);
+    // .c_str() to convert from string to const char*
+    setenv("twt", params.timeWindowType.c_str(), 1);    
+    setenv("twc", params.twColumn.c_str(), 1);
+    setenv("wts", to_string(params.twSize).c_str(), 1);
+    setenv("twss", to_string(params.twStepSize).c_str(), 1);
 
     // properly handle docker container termination 
     signal(SIGINT, signalHandler);
@@ -119,12 +124,19 @@ int main(int argc, char* argv[]) {
     TrinoRestClient client(trinoBaseUrl);
     // -----------------------------------------------------
 
-    Utils utils(tableName, schema, numRegExSymbols, dfaData, client);   // initialise utils
+    string schema = "memory.pattern";
+    SQLUtils utils(tableName, schema, numRegExSymbols, dfaData, client);   // initialise utils
+    vector<string> outputTableColums = params.outputTableColums;    
+    unordered_map<string, string> defines;
+
+    for(int i = 0; i < defines.size(); i++) {
+        defines[params.alphabet[i]] = params.queries[i];
+    }
 
     // main execution; caution: loops until termination
-    vector<string> tempMeasures = {};
-    vector<string> tempDefines = {};
-    run(dfaData, tempMeasures, tempDefines, numRegExSymbols, utils, client);
+    run(schema, dfaData, outputTableColums, defines, numRegExSymbols, utils, client);
+
+    // TODO metadata res tabelle von params.outputTable
 
     return 0;
 }

@@ -2,25 +2,19 @@
 #include <string>
 #include <vector>
 #include <getopt.h>
+#include "cli.h"
 
 using namespace std;
-
-struct CLIParams {
-    string pattern;
-    vector<string> alphabet;
-    vector<string> query;
-    string timeWindowType;
-    string twColumn;
-    int twSize = 0;
-    int twStepSize = 0;
-};
 
 void printHelp() {
     cout << "Usage: program [OPTIONS]\n"
               << "Options:\n"
+              << "  -t, --table_name            Name of the source table\n"
               << "  -r, --regex                 RegEx pattern. Explicit use of parenthesises, example: 'A B | C' evaluates to '(A B) | C', instead use A (B | C)\n"
               << "  -a, --alphabet              RegEx alphabet\n"
-              << "  -q, --query                 SQL queries separated by RegEx symbol. Must be same order as the alphabet\n"
+              << "  -q, --queries               SQL queries separated by RegEx symbol. Must be same order as the alphabet\n"
+              << "  -o, --output_table          Name of the output table\n"
+              << "  -oc, --output_columns       Columns of the output table\n"
               << "  -twt, --time_window_type    Time window type (countbased or timebased)\n"
               << "  -twc, --tw_column           Name of the column for the time window selection\n"
               << "  -tws, --tw_size             Time window size\n"
@@ -39,17 +33,29 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
         if(arg == "-h" || arg == "--help") {
             printHelp();
             exit(0);
-        } else if (arg == "-r" || arg == "--regex") {
+        } else if(arg == "-t" || arg == "--table_name") {
+            if (i + 1 < argc) {
+                params.tableName = argv[++i];
+            }
+        } else if(arg == "-r" || arg == "--regex") {
             if (i + 1 < argc) {
                 params.pattern = argv[++i];
             }
-        } else if (arg == "-a" || arg == "--alphabet") {
+        } else if(arg == "-a" || arg == "--alphabet") {
             while (i + 1 < argc && argv[i + 1][0] != '-') {
                 params.alphabet.push_back(argv[++i]);
             }
-        } else if(arg == "-q" || arg == "--query") {
+        } else if(arg == "-q" || arg == "--queries") {
             while (i + 1 < argc && argv[i + 1][0] != '-') {
-                params.query.push_back(argv[++i]);
+                params.queries.push_back(argv[++i]);
+            }
+        } else if(arg == "-o" || arg == "--output_table") {
+             if (i + 1 < argc) {
+                params.outputTableName = argv[++i];
+            }
+        } else if(arg == "-oc" || arg == "--output_columns") {
+            while (i + 1 < argc && argv[i + 1][0] != '-') {
+                params.outputTableColums.push_back(argv[++i]);
             }
         } else if(arg == "-twt" || arg == "--time_window_type") {
             if (i + 1 < argc) {

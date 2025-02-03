@@ -13,7 +13,7 @@ using namespace std;
 
 extern atomic<bool> running;
 
-class Utils {
+class SQLUtils {
 public:
     // avoid const class variables to avoid const method declaration
     string& originalTableName;
@@ -25,7 +25,7 @@ public:
     TrinoRestClient& client;
 
     // Constructor
-    Utils(string& originalTableName, string& schema, int& numRegExSymbols, json& dfaData, TrinoRestClient& client);
+    SQLUtils(string& originalTableName, string& schema, int& numRegExSymbols, json& dfaData, TrinoRestClient& client);
     
     json loadOrCreateMetadata();
     vector<pair<string, string>> findPredecessors(const string& state);

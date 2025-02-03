@@ -59,14 +59,14 @@ void printName() {
 }
 
 // Constructor
-Utils::Utils(string& originalTableName, string& schema, int& numRegExSymbols, json& dfaData, TrinoRestClient& client)
+SQLUtils::SQLUtils(string& originalTableName, string& schema, int& numRegExSymbols, json& dfaData, TrinoRestClient& client)
     : originalTableName(originalTableName), schema(schema), numRegExSymbols(numRegExSymbols), dfaData(dfaData), client(client) {
         this->client.execute_query("CREATE SCHEMA IF NOT EXISTS " + schema); 
         this->metadata = loadOrCreateMetadata();
         this->columns = this->client.execute_query("SHOW COLUMNS FROM " + schema + "." + originalTableName);
     }
 
-json Utils::loadOrCreateMetadata() {
+json SQLUtils::loadOrCreateMetadata() {
     json metadata;
     
     string partialMatchTableName;
@@ -92,7 +92,7 @@ json Utils::loadOrCreateMetadata() {
 }
 
 // returns predecessor pair of table name and symbol
-vector<pair<string, string>> Utils::findPredecessors(const string& state) {
+vector<pair<string, string>> SQLUtils::findPredecessors(const string& state) {
     vector<pair<string, string>> predecessors;
 
     for(const auto& [startState, transitions] : this->dfaData["dfa_dict"].items()) {
@@ -106,7 +106,7 @@ vector<pair<string, string>> Utils::findPredecessors(const string& state) {
     return predecessors;
 }
 
-void Utils::createTable(const string& tableName) {
+void SQLUtils::createTable(const string& tableName) {
     string createTableString = "CREATE TABLE IF NOT EXISTS " + this->schema + "." + tableName + " (";
     string columnsString = "";
     string columnName;
@@ -133,7 +133,7 @@ void Utils::createTable(const string& tableName) {
     this->client.execute_query(createTableString);
 }
 
-void Utils::insertIntoTable(const string& tableName, const string& tableNameSymbol,  const string& predecessorTableName, const string& predecessorSymbol, const string& condition, const bool& isStartState) {
+void SQLUtils::insertIntoTable(const string& tableName, const string& tableNameSymbol,  const string& predecessorTableName, const string& predecessorSymbol, const string& condition, const bool& isStartState) {
     string insertStatement;
 
     if(isStartState) {

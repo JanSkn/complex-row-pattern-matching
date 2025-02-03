@@ -6,7 +6,7 @@
 class RegexParser {
 private:
     std::string regex;
-    size_t pos;
+    int pos;
     
     void skipWhitespace();
     bool readSymbol();

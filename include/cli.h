@@ -5,12 +5,17 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 struct CLIParams {
-    std::string pattern;
-    std::vector<std::string> alphabet;
-    std::vector<std::string> query;
-    std::string timeWindowType;
-    std::string twColumn;
+    string tableName;
+    string pattern;
+    vector<string> alphabet;
+    vector<string> queries;
+    string outputTableName;
+    vector<string> outputTableColums;
+    string timeWindowType;
+    string twColumn;
     int twSize = 0;
     int twStepSize = 0;
 };

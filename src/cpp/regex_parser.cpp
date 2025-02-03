@@ -7,21 +7,21 @@ using namespace std;
 RegexParser::RegexParser() : pos(0) {}
 
 void RegexParser::skipWhitespace() {
-    while (pos < regex.length() && regex[pos] == ' ') {
-        pos++;
+    while (this->pos < regex.length() && regex[this->pos] == ' ') {
+        this->pos++;
     }
 }
 
 bool RegexParser::readSymbol() {
     skipWhitespace();
-    if (pos >= regex.length()) return false;
+    if (this->pos >= regex.length()) return false;
 
-    char c = regex[pos];
+    char c = regex[this->pos];
     if (c == '|' || c == '(' || c == ')') return false;
 
-    while (pos < regex.length() && regex[pos] != ' ' &&
-           regex[pos] != '|' && regex[pos] != '(' && regex[pos] != ')') {
-        pos++;
+    while (this->pos < regex.length() && regex[this->pos] != ' ' &&
+           regex[this->pos] != '|' && regex[this->pos] != '(' && regex[this->pos] != ')') {
+        this->pos++;
     }
     return true;
 }
@@ -30,23 +30,23 @@ int RegexParser::parseExpression() {
     int maxLength = 0;
     int currentLength = 0;
 
-    while (pos < regex.length()) {
+    while (this->pos < regex.length()) {
         skipWhitespace();
-        if (pos >= regex.length()) break;
+        if (this->pos >= regex.length()) break;
 
-        char c = regex[pos];
+        char c = regex[this->pos];
 
         if (c == ')') {
             break;
         } else if (c == '(') {
-            pos++;
+            this->pos++;
             int innerLength = parseExpression();
-            pos++;
+            this->pos++;
             currentLength += innerLength;
         } else if (c == '|') {
             maxLength = max(maxLength, currentLength);
             currentLength = 0;
-            pos++;
+            this->pos++;
         } else if (readSymbol()) {
             currentLength++;
         }
@@ -57,6 +57,6 @@ int RegexParser::parseExpression() {
 
 int RegexParser::calculateMaxSymbolLength(const string& input) {
     regex = input;
-    pos = 0;
+    this->pos = 0;
     return parseExpression();
 }
