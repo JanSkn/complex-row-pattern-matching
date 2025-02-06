@@ -30,7 +30,7 @@ public:
     // Destructor
     ~TrinoRestClient();
 
-    DataTable execute_query(string query); 
+    DataTable executeQuery(string query); 
 
     // prevents copy construction and assignment
     TrinoRestClient(const TrinoRestClient&) = delete;

@@ -1,0 +1,8 @@
+.vscode/
+build/
+venv/
+
+*.json
+README.md 
+LICENSE
+main

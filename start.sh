@@ -1,5 +1,10 @@
 #!/bin/bash
-chmod +x start.sh
+
+# if the env variable is empty --> local development
+if [ -z "$PROD_ENV" ]; then
+    echo "Running 'make' for local development..."
+    make
+fi
 
 echo "Starting FastAPI server..."
 python -m uvicorn src.python.create_dfa:app --host 127.0.0.1 --port 8000 &
@@ -20,8 +25,7 @@ done
 echo "FastAPI server is ready"
 
 echo "Starting C++ program..."
-make
-./main
+./main "$@"
 
 echo "Stopping FastAPI server..."
 kill $SERVER_PID

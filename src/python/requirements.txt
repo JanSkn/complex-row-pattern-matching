@@ -1,0 +1,3 @@
+fastapi
+uvicorn
+pyformlang==1.0.10
