@@ -1,3 +1,9 @@
+<div align="center">
+  <a href="https://github.com/FrameworkV/FoodFusionAI">
+    <img src="https://github.com/user-attachments/assets/ef557a6f-0644-4e7c-b8d4-a11da164d30b" alt="Logo" width="200" height="200">
+  </a>
+</div>
+
 # DBrex 👋
 
 Introducing **DBrex**, a light-weighted **pattern matching algorithm** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
