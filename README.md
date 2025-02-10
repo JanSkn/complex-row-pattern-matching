@@ -6,7 +6,7 @@
 
 # DBrex 👋
 
-Introducing **DBrex**, a light-weighted **pattern matching algorithm** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
+Introducing **DBrex**, a light-weighted **pattern matching application** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
 
 ![Demo](./demo.gif)
 
