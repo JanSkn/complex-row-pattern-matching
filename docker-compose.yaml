@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  trino:
+    image: trinodb/trino:latest
+    ports:  # expose to host so that users can use connectors with trino and use the UI
+      - "8080:8080"
+    volumes:
+      - ./trino/etc/catalog:/etc/trino/catalog  # bind mount for connectors
+  
+  dbrex:
+    build:
+      context: .
+      image:
+      container_name: dbrex
+      args:
+        - PROD_ENV=true
+    depends_on:
+      - trino
+    volumes:
+      - dbrex:/app/dbrex/data
+
+  # todo docker.host.internal für trino im code --> per env variable die ich ja schon habe

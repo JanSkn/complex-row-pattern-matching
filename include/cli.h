@@ -13,11 +13,12 @@ struct CLIParams {
     vector<string> alphabet;
     vector<string> queries;
     string outputTableName;
-    vector<string> outputTableColums;
+    vector<string> outputTableColumns;
     string timeWindowType;
     string twColumn;
-    int twSize = 0;
-    int twStepSize = 0;
+    int twSize;
+    int twStepSize;
+    int sleepFor;
 };
 
 void printHelp();

@@ -5,7 +5,7 @@ CXXFLAGS = -Wall -std=c++20 -I$(INCDIR)
 LDFLAGS = -lcurl
 
 # Directories
-SRCDIR = src/cpp
+SRCDIR = dbrex/cpp
 BUILDDIR = build
 
 SRCFILES = $(wildcard $(SRCDIR)/*.cpp)

@@ -7,7 +7,7 @@ if [ -z "$PROD_ENV" ]; then
 fi
 
 echo "Starting FastAPI server..."
-python -m uvicorn src.python.create_dfa:app --host 127.0.0.1 --port 8000 &
+python -m uvicorn dbrex.python.create_dfa:app --host 127.0.0.1 --port 8000 &
 SERVER_PID=$!
 echo "FastAPI server started with PID $SERVER_PID"
 echo "Waiting for FastAPI server to be ready..."

@@ -10,15 +10,15 @@ void printHelp() {
     cout << "Usage: program [OPTIONS]\n"
               << "Options:\n"
               << "  -t, --table_name            Name of the source table\n"
-              << "  -r, --regex                 RegEx pattern. Explicit use of parenthesises, example: 'A B | C' evaluates to '(A B) | C', instead use A (B | C)\n"
+              << "  -r, --regex                 RegEx pattern. Explicit use of parentheses, example: 'A B | C' evaluates to '(A B) | C', instead use 'A (B | C)'\n"
               << "  -a, --alphabet              RegEx alphabet\n"
               << "  -q, --queries               SQL queries separated by RegEx symbol. Must be same order as the alphabet\n"
               << "  -o, --output_table          Name of the output table\n"
               << "  -oc, --output_columns       Columns of the output table\n"
-              << "  -twt, --time_window_type    Time window type (countbased or timebased)\n"
+              << "  -twt, --time_window_type    Time window type (countbased or sliding_window). Must be non-decreasing order\n"
               << "  -twc, --tw_column           Name of the column for the time window selection\n"
               << "  -tws, --tw_size             Time window size\n"
-              << "  -twss, --tw_step_size       Time window step size\n"
+              << "  -s, --sleep_for             sleep for n miliseconds after each execution to conserve resources"
               << "  -h, --help                  Show this help message\n\n"
               << "Example:\n"
               << "  dbrex -r 'A1 | (A2 A3)' -a A1 A2 A3 ...\n";
@@ -55,7 +55,7 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
             }
         } else if(arg == "-oc" || arg == "--output_columns") {
             while (i + 1 < argc && argv[i + 1][0] != '-') {
-                params.outputTableColums.push_back(argv[++i]);
+                params.outputTableColumns.push_back(argv[++i]);
             }
         } else if(arg == "-twt" || arg == "--time_window_type") {
             if (i + 1 < argc) {
@@ -69,9 +69,9 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
             if (i + 1 < argc) {
                 params.twSize = stoi(argv[++i]);
             }
-        } else if(arg == "-twss" || arg == "--tw_step_size") {
+        } else if(arg == "-s" || arg == "--sleep_for") { 
             if (i + 1 < argc) {
-                params.twStepSize = stoi(argv[++i]);
+                params.sleepFor = stoi(argv[++i]);
             }
         } else if(arg[0] == '-') {
             cerr << "Unknown option: " << arg << "\n";

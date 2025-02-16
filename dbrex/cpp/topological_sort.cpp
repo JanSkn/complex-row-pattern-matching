@@ -13,13 +13,12 @@ void topologicalSortUtil(
     const unordered_map<string, unordered_map<string, string>>& graph,
     const string& state,
     unordered_set<string>& visited,
-    vector<string>& order
-) {
+    vector<string>& order) {
     visited.insert(state);
 
     // all neighbours of the current state
-    if (graph.find(state) != graph.end()) {
-        for (const auto& edge : graph.at(state)) {
+    if(graph.find(state) != graph.end()) {
+        for(const auto& edge : graph.at(state)) {
             string nextState = edge.second;
             if (visited.find(nextState) == visited.end()) {
                 topologicalSortUtil(graph, nextState, visited, order);
@@ -41,17 +40,16 @@ vector<string> topologicalSort(const unordered_map<string, unordered_map<string,
     return order;
 }
 
-vector<pair<string, string>> traverseGraph(const unordered_map<string, unordered_map<string, string>>& graph, const vector<string>& order) {
-    vector<pair<string, string>> edgeOrder;
+vector<tuple<string, string, string>> traverseGraph(const unordered_map<string, unordered_map<string, string>>& graph, const vector<string>& order) {
+    vector<tuple<string, string, string>> edgeOrder;
 
-    // Kanten in der Reihenfolge der topologischen Sortierung hinzufügen
-    for (const string& state : order) {
-        if (graph.find(state) != graph.end()) {
+    for(const string& state : order) {
+        if(graph.find(state) != graph.end()) {
             for (const auto& edge : graph.at(state)) {
-                // string nextState = edge.second;
                 // edgeOrder.push_back({state, nextState});
                 string transitionSymbol = edge.first;
-                edgeOrder.push_back({state, transitionSymbol});
+                string nextState = edge.second;
+                edgeOrder.push_back({state, transitionSymbol, nextState});
             }
         }
     }
@@ -63,12 +61,10 @@ vector<pair<string, string>> traverseGraph(const unordered_map<string, unordered
 unordered_map<string, unordered_map<string, string>> parseGraph(json& j) {
     unordered_map<string, unordered_map<string, string>> graph;
 
-    for (auto& [key, value] : j.items()) {
-        cout << key << value << endl;
-        string node = key;  // Der Knoten (z. B. "0;2;4")
+    for(auto& [key, value] : j.items()) {
+        string node = key; 
         unordered_map<string, string> edges;
-        for (auto& [label, target] : value.items()) {
-            // Die Kanten (z. B. "A": "6")
+        for(const auto& [label, target] : value.items()) {
             edges[label] = target.get<string>();
         }
         graph[node] = edges;

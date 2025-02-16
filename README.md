@@ -6,6 +6,9 @@
 
 # DBrex 👋
 
+![Version](https://img.shields.io/github/v/release/JanSkn/complex-row-pattern)
+![GitHub top language](https://img.shields.io/github/languages/top/janskn/complex-row-pattern)
+
 Introducing **DBrex**, a light-weighted **pattern matching application** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
 
 ![Demo](./demo.gif)
@@ -24,12 +27,12 @@ Introducing **DBrex**, a light-weighted **pattern matching application** for **d
 > DBrex will listen to your database table as long as the container is running. Stop the container if not needed.
 
 > [!WARNING]
-> When using Docker, make sure to mount a volume with `-v dbrex:/app/src/data` in your Docker command. This step is crucial as without it DBrex restarts all already executed computations.
+> When using Docker, make sure to mount a volume with `-v dbrex:/app/dbrex/data` in your Docker command. This step is crucial as without it DBrex restarts all already executed computations.
 
 **Example Docker Command**:
 
 ```bash
-docker run -d -v dbrex:/app/src/data -e --name dbrex ghcr.io/dbrex:latest ...(variables)
+docker run -d -v dbrex:/app/dbrex/data -e --name dbrex ghcr.io/dbrex:latest ...(variables)
 ```
 
 ## How It Works 🛠️

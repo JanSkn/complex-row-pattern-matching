@@ -5,6 +5,7 @@
 #include <atomic>
 #include <string>
 #include <random>
+#include <tuple>
 #include <sstream>
 #include <iomanip>
 #include "trino_connect.h"
@@ -13,30 +14,37 @@ using namespace std;
 
 extern atomic<bool> running;
 
+void signalHandler(int signal);
+void printName();
+void printDfa(const json& dfaData);
+string replaceWhitespace(const string& input);
+string generateUuid();
+
 class SQLUtils {
 public:
     // avoid const class variables to avoid const method declaration
     string& originalTableName;
+    string& outputTableName;
     json metadata;
-    string& schema;
+    vector<tuple<string, string, string, string>> transitions;
+    string& catalogAndSchema;
     DataTable columns;
-    int& numRegExSymbols;
     json& dfaData;
     TrinoRestClient& client;
 
     // Constructor
-    SQLUtils(string& originalTableName, string& schema, int& numRegExSymbols, json& dfaData, TrinoRestClient& client);
+    SQLUtils(string& originalTableName, string& outputTableName, string& schema, json& dfaData, TrinoRestClient& client);
     
-    json loadOrCreateMetadata();
-    vector<pair<string, string>> findPredecessors(const string& state);
-    void createTable(const string& tableName);
-    void insertIntoTable(const string& tableName, const string& symbol, const string& predecessorTableName, const string& predecessorSymbol, const string& condition, const bool& isStartState);
-    
-};
+    void setup();
+    void getColumns();
+    map<string, vector<vector<string>>> getPredecessors(const vector<tuple<string, string, string>>& transitions);
+    vector<vector<string>> getPredecessorPaths(const string& state, const map<string, vector<vector<string>>>& predecessors);
+    void getPredecessorTables(json& metadata);
 
-void signalHandler(int signal);
-string replaceWhitespace(const string& input);
-void printName();
-string generateUuid();
+    void createTable(const string& tableName, const int& numSymbols);
+    string replaceTableColumnNames(const std::string& query, const std::vector<std::string>& symbolNames);
+    string getTimeWindowCondition(const string& twt, const string& columnName, vector<int>& currentTimeWindow);
+    void insertIntoTable(const string& tableName, const string& symbol, const string& predecessorTableName, const string& condition, const string& timeWindowCondition, const vector<string>& partialMatches, const bool& isStartState);
+};
 
 #endif 

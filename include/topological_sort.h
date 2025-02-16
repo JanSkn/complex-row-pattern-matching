@@ -21,7 +21,7 @@ vector<string> topologicalSort(
     const string& startState
 );
 
-vector<pair<string, string>> traverseGraph(
+vector<tuple<string, string, string>> traverseGraph(
     const unordered_map<string, unordered_map<string, string>>& graph,
     const vector<string>& order
 );

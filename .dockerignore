@@ -1,6 +1,8 @@
 .vscode/
-build/
 venv/
+animations/
+media/
+build/
 
 *.json
 README.md 

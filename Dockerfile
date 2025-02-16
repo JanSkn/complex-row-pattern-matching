@@ -26,7 +26,7 @@ WORKDIR /app
 
 # only copy compiled c++ code, python script + requirements.txt and shell script from build
 COPY --from=build /app/main .
-COPY --from=build /app/src/python ./src/python
+COPY --from=build /app/dbrex/python ./dbrex/python
 COPY --from=build /app/start.sh .
 
 # set env variable PROD_ENV only for build to avoid make command in start.sh
@@ -45,7 +45,7 @@ RUN apk add --no-cache \
     netcat-openbsd \
     && python3 -m venv /venv \  
     && . /venv/bin/activate \
-    && pip install -r src/python/requirements.txt
+    && pip install -r dbrex/python/requirements.txt
 
 # add venv to path so that all python commands (in start.sh) use the venv
 ENV PATH="/venv/bin:$PATH"  

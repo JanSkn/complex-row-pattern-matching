@@ -33,7 +33,7 @@ TrinoRestClient::~TrinoRestClient() {
     curl_global_cleanup();
 }
 
-    DataTable TrinoRestClient::execute_query(string query) {
+    DataTable TrinoRestClient::executeQuery(string query) {
     CURL* curl = curl_easy_init();
     if (!curl) {
         cerr << "Failed to initialize CURL" << endl;
