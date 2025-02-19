@@ -58,7 +58,7 @@ DBrex employs a unique approach to pattern matching in databases:
 4. State Management: Intermediate states are preserved to optimize performance
 5. Incremental Updates: New data is processed using existing results, avoiding full recomputation
 
-[Traversal](/animations/DFAPathAnimation.mp4)
+[Traversal](/animations/DFA_traversal.gif)
 
 ### Supported Databases 🗄️
 DBrex is built on top of the SQL engine [Trino](https://trino.io).
