@@ -11,7 +11,9 @@
 
 Introducing **DBrex**, a light-weighted **pattern matching application** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
 
-![Demo](./demo.gif)
+Once the container is running, the application finds all patterns in the table and returns them in an output table, optimised for frequently updated databases.
+
+![Demo](demo.gif)
 
 ## Key Features ⭐
 
@@ -27,13 +29,24 @@ Introducing **DBrex**, a light-weighted **pattern matching application** for **d
 > DBrex will listen to your database table as long as the container is running. Stop the container if not needed.
 
 > [!WARNING]
-> When using Docker, make sure to mount a volume with `-v dbrex:/app/dbrex/data` in your Docker command. This step is crucial as without it DBrex restarts all already executed computations.
+> When using Docker, make sure to mount a volume with `-v dbrex:/app/dbrex/data` in your Docker command. This step is crucial as without it DBrex restarts all computations after container restart.
 
 **Example Docker Command**:
 
 ```bash
-docker run -d -v dbrex:/app/dbrex/data -e --name dbrex ghcr.io/dbrex:latest ...(variables)
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest ...
 ```
+TODO befehle überarbeiten
+
+## Usage
+
+### Setup
+
+To set up DBrex with your own database, follow this [guide](USAGE.md).
+
+### Execution
+
+
 
 ## How It Works 🛠️
 
@@ -44,6 +57,8 @@ DBrex employs a unique approach to pattern matching in databases:
 3. SQL Integration: DFA transitions are mapped to SQL JOIN operations
 4. State Management: Intermediate states are preserved to optimize performance
 5. Incremental Updates: New data is processed using existing results, avoiding full recomputation
+
+[Traversal](/animations/DFAPathAnimation.mp4)
 
 ### Supported Databases 🗄️
 DBrex is built on top of the SQL engine [Trino](https://trino.io).
@@ -85,6 +100,10 @@ Compared to SQL's MATCH_RECOGNIZE:
 
 Regular expression operators `*` (Kleene star) and `+` (Plus) are currently not supported in pattern definitions.
 Patterns are limited to finite-length sequences.
+
+## Hint 💡
+
+You can see the magic happen at http://127.0.0.1:8080/ui/# - to log in, enter an arbitrary username.
 
 ## License 📜
 
