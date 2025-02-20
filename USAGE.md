@@ -1,60 +1,117 @@
-# Usage 
+# Database Connection Guide for DBrex
 
-To connect your database to DBrex, you need to configure the SQL Engine.
+## Overview
+DBrex connects to your database through Trino (formerly PrestoSQL), which acts as a distributed SQL query engine. This guide will help you set up and configure your database connection.
 
-## Trino 🐰
+## Understanding Trino Architecture 🐰
 
-### Catalog and Schema
+### Data Source Organization
+Trino uses a three-level hierarchy to organize data sources:
+- **Catalog**: Configuration for accessing a specific data source
+- **Schema**: Logical grouping of tables within a catalog
+- **Table**: Individual data tables
 
-A Trino catalog is a collection of configuration properties used to access a specific data source, including the required connector and any other details such as credentials and URL. Catalogs are defined in properties files stored in the Trino configuration directory. The name of the properties file determines the name of the catalog. For example, the properties file `etc/example.properties` results in a catalog name `example`.
+This hierarchy is reflected in Trino's fully qualified naming: `catalog.schema.table`
 
-Schemas are a way to organize tables. Together, a catalog and schema define a set of tables and other objects that can be queried.
+### Catalogs Explained
+A catalog in Trino represents a configured data source and consists of:
+- Connector configuration
+- Authentication credentials
+- Connection properties
+- Data source URL
 
-### Setup
+Catalogs are defined through properties files in Trino's configuration directory. The filename becomes the catalog name (e.g., `postgres.properties` creates a catalog named "postgres").
 
-See a list of all [supported connectors](https://trino.io/docs/current/connector.html).
+## Setting Up a Connection to your Database
 
-Start a mounted Trino Container to configure the connectors:
-
+### 1. Start Trino Container
+Launch a mounted Trino container:
 ```bash
-$ docker run --name trino -d -p 8080:8080 -v <YOUR_PATH>:/etc/trino/catalog trinodb/trino
+docker run --name trino \
+    -d \
+    -p 8080:8080 \
+    -v <YOUR_PATH>:/etc/trino/catalog \
+    trinodb/trino
 ```
 
-Afterwards, create a connector file for your data source and store it on the host where you mounted the container.
+### 2. Configure Your Connector
+1. Choose your connector from the [official Trino connectors list](https://trino.io/docs/current/connector.html)
+2. Create a properties file in your mounted configuration directory:
+   - Filename format: `<connector_name>.properties`
+   - Example: `postgres.properties`, `mysql.properties`, ...
+3. Add the required configuration parameters for your chosen connector
 
-The name should be in the following format: `connector_name.properties`, e.g. `postgres.properties`.
-
-The configurations depend on the data source, find the corresponding one [here](https://trino.io/docs/current/connector.html).
-
-After you created the properties file, restart the Trino container.
-
-If you set up everything correctly, you can see your data source when entering 
-```bash 
-SHOW catalogs;
-```
-in Trino.
-
-### Example
-
-The basic properties file for PostgreSQL looks like this:
-
+Example PostgreSQL connector configuration:
 ```properties
 connector.name=postgresql
-connection-url=jdbc:postgresql://<YOUR_HOST>:5432/<YOUR_DATABASE>
-connection-user=<YOUR_USER>
-connection-password=<YOUR_PASSWORD>
+connection-url=jdbc:postgresql://example.net:5432/database
+connection-user=root
+connection-password=secret
 ```
 
-### DBrex Setup
-
-To give DBrex access to your database, you must pass the catalog, the schema and the table name when starting the DBrex container.
-
-You can find a list of the corresponding arguments in the [ReadMe](README.md).
-
-The exact structure depends on the data source.
-
-To find out, enter
-
+### 3. Verify Connection
+1. Restart the Trino container:
 ```bash
-SHOW schemas FROM <YOUR_DATA_SOURCE>;
+docker restart trino
 ```
+
+2. Connect to Trino CLI and verify your catalog:
+```bash
+docker exec -it trino trino
+```
+```sql
+SHOW catalogs;
+```
+
+3. Explore your data source:
+```sql
+-- List schemas in your catalog
+SHOW SCHEMAS FROM catalog_name;
+
+-- List tables in a schema
+SHOW TABLES FROM catalog_name.schema_name;
+```
+
+#### Example
+
+<img width="863" alt="image" src="https://github.com/user-attachments/assets/1e5a72a2-9413-4c2f-adf9-d2aeb37ed230" />
+
+## DBrex Setup
+
+To give DBrex access to your database, you must pass the catalog, the schema and the table name along with other parameters when starting the DBrex container.
+There are two options to pass the arguments:
+
+1) as command line arguments
+```bash
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
+```
+
+2) In a file called `args.json`.
+```bash
+docker run -d -v dbrex:/app/dbrex/data -v <YOUR_PATH>:/app/dbrex/config --name dbrex ghcr.io/dbrex:latest
+```
+The argument names must be equivalent to the long option below. 
+Example:
+```json
+{
+  "catalog": "YOUR_CATALOG",
+  "schema": "YOUR_SCHEMA",
+}
+```
+
+Here is a list of all arguments:
+
+| Option | Long Option | Description |
+|--------|-------------|-------------|
+| -c | --catalog | Name of the data source |
+| -s | --schema | Name of the schema of the catalog |
+| -t | --table_name | Name of the source table |
+| -r | --regex | RegEx pattern. Explicit use of parentheses, example: 'A1 A2 \| A3' evaluates to '(A1 A2) \| A3', instead use 'A1 (A2 \| A3)' |
+| -a | --alphabet | RegEx alphabet |
+| -q | --queries | SQL queries separated by RegEx symbol. Must be same order as the alphabet |
+| -o | --output_table | Name of the output table |
+| -oc | --output_columns | Columns of the output table |
+| -twt | --time_window_type | Time window type (countbased or sliding_window). Only countbased supported at this version |
+| -twc | --tw_column | Name of the column for the time window selection. Values must be integer and in increasing order |
+| -tws | --tw_size | Time window size |
+| -sf | --sleep_for | sleep for n milliseconds after each execution to conserve resources |
