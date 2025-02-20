@@ -34,19 +34,12 @@ Once the container is running, the application finds all patterns in the table a
 **Example Docker Command**:
 
 ```bash
-docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest ...
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
 ```
-TODO befehle überarbeiten
 
-## Usage
+## Setup & Usage
 
-### Setup
-
-To set up DBrex with your own database, follow this [guide](USAGE.md).
-
-### Execution
-
-
+To set up DBrex with your own database and to start the container, follow this [guide](USAGE.md#dbrex-setup).
 
 ## How It Works 🛠️
 
