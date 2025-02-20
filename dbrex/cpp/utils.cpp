@@ -62,7 +62,7 @@ void printDfa(const json& dfaData) {
 
 string replaceWhitespace(const string& input) {
     string result = input;
-    for(int i = 0; i < result.length(); i++) {
+    for(size_t i = 0; i < result.length(); i++) {
         if (result[i] == ' ') {
             result.replace(i, 1, "%20"); 
             i += 2;
@@ -282,8 +282,8 @@ void SQLUtils::createTable(const string& tableName, const int& numSymbols) {
     string columnName;
     string columnDataType;
 
-    for(int i = 0; i < numSymbols; i++) {
-        for(int j = 0; j < this->columns.size(); j++) {
+    for(size_t i = 0; i < numSymbols; i++) {
+        for(size_t j = 0; j < this->columns.size(); j++) {
             columnName = "s" + to_string(i) + "_" + get<string>(this->columns[j][0]);
             columnDataType = get<string>(this->columns[j][1]);
             columnsString += columnName + " " + columnDataType;
@@ -374,7 +374,7 @@ void SQLUtils::createOutputTable(const string& outputTableName) {
     for(const string& resultTable : resultTables) {
         int differenceNumSymbols = maxNumSymbols - this->metadata[resultTable]["num_symbols"].get<int>();
         string nulls = "";
-        for(int i = 0; i < differenceNumSymbols*this->columns.size(); i++) {
+        for(size_t i = 0; i < differenceNumSymbols*this->columns.size(); i++) {
             nulls += ", NULL";
         }
 

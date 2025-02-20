@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     string tableName = params.tableName;
     string rawRegEx = params.pattern;                       // ! explicit use of parenthesises, example: "A B | C" evaluates to "(A B) | C" --> instead make A (B | C)
     map<string, string> defines;                            // alphabet and queries combined
-    for(int i = 0; i < params.alphabet.size(); i++) {
+    for(size_t i = 0; i < params.alphabet.size(); i++) {
         defines[params.alphabet[i]] = params.queries[i];
     }
     string outputTable = params.outputTableName;
