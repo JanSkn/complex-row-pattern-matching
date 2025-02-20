@@ -11,13 +11,12 @@ services:
   dbrex:
     build:
       context: .
-      image:
+      image:  # TODO
       container_name: dbrex
-      args:
+      environment:
         - PROD_ENV=true
     depends_on:
       - trino
     volumes:
-      - dbrex:/app/dbrex/data
-
-  # todo docker.host.internal für trino im code --> per env variable die ich ja schon habe
+      - dbrex:/app/dbrex/data             # for persistant intermediate state storage
+      - ./dbrex/config:app/dbrex/config   # for optional args file

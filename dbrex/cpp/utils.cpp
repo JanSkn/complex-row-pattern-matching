@@ -12,6 +12,7 @@
 #include <cctype>
 #include "utils.h"
 #include "topological_sort.h"
+#include "cli.h"
 
 using namespace std;
 
@@ -25,6 +26,10 @@ void signalHandler(int signal) {
 }
 
 void printName() {
+    ifstream configFile("config.json");
+    json config;
+    configFile >> config;
+
     cout << "\n";
     cout << " _____    ____     _____     _____    __  __\n";
     cout << "|  _  \\  |  _ \\   |  _  \\   |  ___|   \\ \\/ /\n";
@@ -32,6 +37,11 @@ void printName() {
     cout << "| | | |  |  _ <   |  _ <    |  __|     /  \\ \n";
     cout << "| |/ /   | |_) |  | | \\ \\   | |___    / /\\ \\\n";
     cout << "|___/    |____/   |_|  \\_\\  |_____|  /_/  \\_\\\n";
+    cout << "\n";
+    cout << "Author: " << config["author"].get<string>() << "\n";
+    cout << "v" << config["version"].get<string>() << " - " << config["github"].get<string>() << "\n";
+    cout << "\n";
+    cout << "Hint: You can see the magic happen at http://127.0.0.1:8080/ui/#\n";
     cout << "\n";
 }
 
@@ -90,10 +100,38 @@ vector<string> splitString(const string& input, char delimiter) {
     return tokens;
 }
 
+const string currentTimeWindowFilePath = "dbrex/data/currentTimeWindow.json";
+
+vector<int> getCurrentTimeWindow() {
+    vector<int> timeWindow;
+
+    ifstream infile(currentTimeWindowFilePath);
+    if (infile.is_open()) {
+        json j;
+        infile >> j;
+        infile.close();
+        timeWindow = j["time_window"].get<vector<int>>();
+    } else {
+        timeWindow = {-1, -1};
+        saveCurrentTimeWindow(timeWindow);
+    }
+
+    return timeWindow;
+}
+
+void saveCurrentTimeWindow(const vector<int>& timeWindow) {
+    json j;
+    j["time_window"] = timeWindow;
+
+    ofstream outfile(currentTimeWindowFilePath);
+
+    outfile << j.dump(4);
+    outfile.close();
+}
+
 // Constructor
 SQLUtils::SQLUtils(string& originalTableName, string& outputTableName, string& catalogAndSchema, json& dfaData, TrinoRestClient& client)
     : originalTableName(originalTableName), outputTableName(outputTableName), catalogAndSchema(catalogAndSchema), dfaData(dfaData), client(client) {
-        this->client.executeQuery("CREATE SCHEMA IF NOT EXISTS " + catalogAndSchema);         
         this->getColumns();
         this->setup();
     }
@@ -104,7 +142,6 @@ void SQLUtils::setup() {
 
     ifstream checkTransitionsFile("dbrex/data/transitions.json");
     ifstream checkMetadataFile("dbrex/data/metadata.json");
-
     // store both to preserve states when restarting
     // both depend on each other, storing both is important
     if(checkTransitionsFile && checkMetadataFile) {
@@ -269,12 +306,12 @@ void SQLUtils::createTable(const string& tableName, const int& numSymbols) {
 Example of partialMatches: {"A", "B", "A"} means predecessor table has ABA matched.
 index i represents si so column names get replaced, e.g. from B.id to s1_id
 */
-string SQLUtils::replaceTableColumnNames(const std::string& query, const std::vector<std::string>& partialMatches) {
+string SQLUtils::replaceTableColumnNames(const string& query, const vector<string>& partialMatches) {
     
     string result = query;
 
     for (int i = 0; i < partialMatches.size(); i++) {
-        const std::string& symbol = partialMatches[i];
+        const string& symbol = partialMatches[i];
         
         // finds symbol.column_name
         regex pattern(symbol + "\\.(\\w+)");
@@ -286,17 +323,8 @@ string SQLUtils::replaceTableColumnNames(const std::string& query, const std::ve
     return result;
 }
 
-string SQLUtils::getTimeWindowCondition(const string& twt, const string& columnName, vector<int>& currentTimeWindow) {
-    string whereClause;
-
-    if(twt == "countbased") {
-                    whereClause = columnName + " BETWEEN " + to_string(currentTimeWindow[0]) + " AND " + to_string(currentTimeWindow[1]);
-                } else {
-                    // TODO
-                    string startTimestamp = "";
-                    string endTimestamp = "";
-                    whereClause = columnName + " >= " + startTimestamp + " AND " + columnName + " <= " + endTimestamp;
-                }
+string SQLUtils::getTimeWindowCondition(const string& columnName, vector<int>& currentTimeWindow) {
+    string whereClause = columnName + " BETWEEN " + to_string(currentTimeWindow[0]) + " AND " + to_string(currentTimeWindow[1]); 
 
     return whereClause;
 }
@@ -318,7 +346,41 @@ const string& condition, const string& timeWindowCondition, const vector<string>
         " JOIN " + this->catalogAndSchema + "." + this->originalTableName + " " + tableNameSymbol + 
         " ON " + updatedCondition + " WHERE " + timeWindowCondition;
     }
-    cout << "orig " << condition <<endl;
-    cout << " final" << insertStatement << endl;
+
     this->client.executeQuery(insertStatement);
+}
+
+void SQLUtils::createOutputTable(const string& outputTableName) {
+    int maxNumSymbols = 0;
+    vector<string> resultTables;
+    
+    vector<string> finalStates = this->dfaData["final_states"];
+    for(const string& finalState : finalStates) {
+        for(const auto& [state, _, nextState, tableName] : this->transitions) {
+            if(nextState == finalState || state == finalState) {    // all states that lead to a final state or are a final state itself
+                resultTables.push_back(tableName);
+
+                int numSymbolsCurrentTable = this->metadata[tableName]["num_symbols"];
+                if(numSymbolsCurrentTable > maxNumSymbols) {
+                    maxNumSymbols = numSymbolsCurrentTable;
+                }
+            }
+        }
+    }
+
+    this->client.executeQuery("DROP TABLE IF EXISTS " + this->catalogAndSchema + "." + outputTableName);  // drop table to avoid duplicates
+    this->createTable(outputTableName, maxNumSymbols);
+
+    for(const string& resultTable : resultTables) {
+        int differenceNumSymbols = maxNumSymbols - this->metadata[resultTable]["num_symbols"].get<int>();
+        string nulls = "";
+        for(int i = 0; i < differenceNumSymbols*this->columns.size(); i++) {
+            nulls += ", NULL";
+        }
+
+        string insertStatement = "INSERT INTO " + this->catalogAndSchema + "." + outputTableName + " SELECT *" + nulls + " FROM " + this->catalogAndSchema + "." + resultTable;
+        this->client.executeQuery(insertStatement);
+    }
+
+    cout << "Resulting matches at " + this->catalogAndSchema + "." + outputTableName + "." << endl;
 }

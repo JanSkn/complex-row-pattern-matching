@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include "trino_connect.h"
+#include "cli.h"
 
 using namespace std;
 
@@ -19,6 +20,8 @@ void printName();
 void printDfa(const json& dfaData);
 string replaceWhitespace(const string& input);
 string generateUuid();
+vector<int> getCurrentTimeWindow();
+void saveCurrentTimeWindow(const vector<int>& timeWindow);
 
 class SQLUtils {
 public:
@@ -43,8 +46,9 @@ public:
 
     void createTable(const string& tableName, const int& numSymbols);
     string replaceTableColumnNames(const std::string& query, const std::vector<std::string>& symbolNames);
-    string getTimeWindowCondition(const string& twt, const string& columnName, vector<int>& currentTimeWindow);
+    string getTimeWindowCondition(const string& columnName, vector<int>& currentTimeWindow);
     void insertIntoTable(const string& tableName, const string& symbol, const string& predecessorTableName, const string& condition, const string& timeWindowCondition, const vector<string>& partialMatches, const bool& isStartState);
+    void createOutputTable(const string& outputTableName);
 };
 
 #endif 

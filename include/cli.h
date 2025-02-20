@@ -8,6 +8,8 @@
 using namespace std;
 
 struct CLIParams {
+    string catalog;
+    string schema;
     string tableName;
     string pattern;
     vector<string> alphabet;

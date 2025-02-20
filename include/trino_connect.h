@@ -12,8 +12,6 @@ using json = nlohmann::json;
 using Row = vector<variant<int, string, float, bool>>; 
 using DataTable = vector<Row>;
 
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* output);
-
 class TrinoRestClient {
 private:
     string m_serverUrl;

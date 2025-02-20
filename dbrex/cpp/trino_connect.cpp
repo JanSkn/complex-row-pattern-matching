@@ -16,9 +16,10 @@ Reference: https://trino.io/docs/current/develop/client-protocol.html
 using namespace std;
 
 // callback function for CURL to collect response data
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* output) {
+[[maybe_unused]] static size_t WriteCallback(void* contents, size_t size, size_t nmemb, string* output) {
     size_t totalSize = size * nmemb;
     output->append((char*)contents, totalSize);
+
     return totalSize;
 }
 
@@ -35,7 +36,7 @@ TrinoRestClient::~TrinoRestClient() {
 
     DataTable TrinoRestClient::executeQuery(string query) {
     CURL* curl = curl_easy_init();
-    if (!curl) {
+    if(!curl) {
         cerr << "Failed to initialize CURL" << endl;
         return {};
     }
@@ -62,7 +63,7 @@ TrinoRestClient::~TrinoRestClient() {
 
     // first query
     CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
+    if(res != CURLE_OK) {
         cerr << "CURL error: " << curl_easy_strerror(res) << endl;
         curl_easy_cleanup(curl);
         curl_slist_free_all(headers);
@@ -81,7 +82,7 @@ TrinoRestClient::~TrinoRestClient() {
         responseString.clear();
 
         curl = curl_easy_init();
-        if (!curl) {
+        if(!curl) {
             cerr << "Failed to initialize CURL for nextUri" << endl;
             return {}; 
         }
@@ -100,16 +101,16 @@ TrinoRestClient::~TrinoRestClient() {
         curl_easy_cleanup(curl);
 
         if(!(jsonResponse["data"].empty())) {       // chunk containts data
-            for (const auto& row : jsonResponse["data"]) {
+            for(const auto& row : jsonResponse["data"]) {
                 Row currentRow;
-                for (const auto& item : row) {
-                    if (item.is_number_integer()) {
+                for(const auto& item : row) {
+                    if(item.is_number_integer()) {
                         currentRow.push_back(item.get<int>());
-                    } else if (item.is_string()) {
+                    } else if(item.is_string()) {
                         currentRow.push_back(item.get<string>());
-                    } else if (item.is_number_float()) {
+                    } else if(item.is_number_float()) {
                         currentRow.push_back(item.get<float>());
-                    } else if (item.is_boolean()) {
+                    } else if(item.is_boolean()) {
                         currentRow.push_back(item.get<bool>());
                     } else {
                         cerr << "Unknown data type." << endl;

@@ -17,90 +17,97 @@
 using namespace std;
 using json = nlohmann::json;   
 
-// temp variablen, die später wo anders oder per cli
-string twt = "countbased";
-// string schema = "memory.pattern";
-string tableName = "CrimeTable";
-string timeWindowColumnName = "id";
-int timeWindowSize = 3;
-// ---------
-
-void run(string& schema, json& dfaData, string& outputTable, vector<string>& outputTableColumns, map<string, string>& defineConditions, SQLUtils& utils, TrinoRestClient& client) {
-    // ---------- initial setup ----------
-    // string twt = getenv("twt");
-    string twc = getenv("twc");
-    twc = "id"; // temp
-    // int tws = stoi(getenv("tws"));
-    vector<int> currentTimeWindow = {0, timeWindowSize - 1};   // for countbased time windows
-    string startTimestamp; string endTimestamp;                // for time based time windows
+void run(string& catalogAndSchema, const string& tableName, const string& outputTable, const vector<string>& outputTableColumns, const string& twt, 
+const string& twc, const int& tws, const int& sleepFor, map<string, string>& defineConditions, const json& dfaData, SQLUtils& utils, TrinoRestClient& client) {
+    bool firstLoop = true;
+    // --- get initial values for the time window determination ---
+    DataTable twcValues_dt = client.executeQuery("SELECT " + twc + " FROM " + catalogAndSchema + "." + tableName);
+    vector<int> twcValues;
+    for(Row& row : twcValues_dt) {
+        twcValues.push_back(get<int>(row[0])); 
+    }
+    vector<int> currentTimeWindow = getCurrentTimeWindow();                 // stores start and end index of the current time window, initialised with {-1, -1}
+    int i = (currentTimeWindow[0] == -1) ? 0 : currentTimeWindow[0];        // i is 0 when first execution (= initialisation of currentTimeWindow with -1), else the last processed value 
     string timeWindowCondition;    
-    // -----------------------------------
-
+    // ------------------------------------------------------------
     while(running) {
-        this_thread::sleep_for(chrono::milliseconds(100));
-        int numRows = get<int>(client.executeQuery("SELECT COUNT(*) FROM " + schema + "." + tableName)[0][0]);
-        // todo evtl 1 sek timer oder so um ressourcen zu sparen, aber anwendungsfall ja evtl wo oft updates sind
+        this_thread::sleep_for(chrono::milliseconds(sleepFor));             // save ressources
+        // --- update values for time window in case of new insertions ---
+        DataTable newTwcValues = client.executeQuery("SELECT " + twc + " FROM " + catalogAndSchema + "." + tableName + " WHERE " + twc + " > " + to_string(twcValues[twcValues.size()-1]));
+        for(Row& row : newTwcValues) {
+            twcValues.push_back(get<int>(row[0])); 
+        }
+        // ---------------------------------------------------------------
 
-        while(currentTimeWindow[0] < numRows) {
+        while(currentTimeWindow[1] < twcValues[twcValues.size()-1]) {   // example: 15 rows, tw size: 5: ..., 8-13, 9-14, 10-15, stop then because everything is covered
+            cout << "Executing (" + to_string(i+1) + "/" + to_string(twcValues.size()-min(tws, static_cast<int>(twcValues.size())-1)) + ")..." << endl;
+            
+            currentTimeWindow[0] = twcValues[i];
+            currentTimeWindow[1] = twcValues[min(i+tws, static_cast<int>(twcValues.size()-1))];     // min if user's tws is greater than num of rows
+            i++;
+
             for(const auto& [state, symbol, _, partialMatchTableName] : utils.transitions) {
                 string condition = defineConditions[symbol];
-                // condition = "C.crimetype = 'Credit Card Fraud' AND C.lat BETWEEN T.lat - 0.005";
                 vector<string> partialMatch = utils.metadata[partialMatchTableName]["predecessor_symbols"];
-                // partialMatch = {"C"};
-
-                const string combinedColumnName = schema + "." + tableName + "." + timeWindowColumnName;
                 
-                timeWindowCondition = utils.getTimeWindowCondition(twt, twc, currentTimeWindow);
+                timeWindowCondition = utils.getTimeWindowCondition(twc, currentTimeWindow);     // gets appended to the insert statement to simulate time windows
 
                 bool isStartState = state == dfaData["start_state"].get<string>();
                 string predecessorTableName = utils.metadata[partialMatchTableName]["predecessor"];
         
                 utils.insertIntoTable(partialMatchTableName, symbol, predecessorTableName, condition, timeWindowCondition, partialMatch, isStartState);
             }
+            saveCurrentTimeWindow(currentTimeWindow);
 
-            currentTimeWindow[0] += 1;
-            currentTimeWindow[1] += 1;
+            bool lastExec = i+tws-1 == twcValues.size()-1;
+            if(lastExec) {
+                utils.createOutputTable(outputTable);
+                firstLoop = true;
+            }
         }
-
+        if(firstLoop) {
+            cout << "Idling..." << endl;
+            firstLoop = false;
+        }
     }
 }
 
 int main(int argc, char* argv[]) {  
-    /*
-    TODOS
-    Check data types --> if something like primary key: remove, because otherwise multiple columns --> error
-    What if several equal symbols, e.g. AAB, which column replacement for As?
-    No variable dependencies for variables after current variable, e.g. AB: A must not depend on B
-    change host to docker.host.internal
-    */
+    // plot docker image name in terminal
+    printName();  
 
-    // if (argc == 1) {
-    //     std::cout << "No arguments provided." << endl;
-    //     printHelp();
-    //     return 1;
-    // }
+    ifstream configFile("dbrex/config/args.json");
+
+    if (!configFile && argc == 1) {
+        std::cout << "No args.json or arguments provided.\n\n";
+        printHelp();
+        return 1;
+    }
 
     CLIParams params = parseCommandLine(argc, argv);
-    // .c_str() to convert from string to const char*
-    setenv("twt", params.timeWindowType.c_str(), 1);    
-    setenv("twc", params.twColumn.c_str(), 1);
-    setenv("wts", to_string(params.twSize).c_str(), 1);
+    string catalog = params.catalog;
+    string schema = params.schema;
+    string catalogAndSchema = catalog + "." + schema;
+    string tableName = params.tableName;
+    string rawRegEx = params.pattern;                       // ! explicit use of parenthesises, example: "A B | C" evaluates to "(A B) | C" --> instead make A (B | C)
+    map<string, string> defines;                            // alphabet and queries combined
+    for(int i = 0; i < params.alphabet.size(); i++) {
+        defines[params.alphabet[i]] = params.queries[i];
+    }
+    string outputTable = params.outputTableName;
+    vector<string> outputColumns = params.outputTableColumns;
+    string twt = params.timeWindowType;
+    string twc = params.twColumn;
+    int tws = params.twSize;
+    int sleepFor = params.sleepFor;
 
     // properly handle docker container termination 
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
-    // plot docker image name in terminal
-    printName();  
-
-    // const string rawRegEx = params.pattern; // ! explicit use of parenthesises, example: "A B | C" evaluates to "(A B) | C" --> instead make A (B | C)
-    const string rawRegEx = "T C M";
-    // const string rawRegEx = "A B";
-
     // ----- initialise Python API and Trino (SQL) API -----
-    string host = "http://127.0.0.1";
-    string pythonBaseUrl = host + ":" + "8000";
-    string trinoBaseUrl = host + ":" + "8080";
+    string pythonBaseUrl = "http://127.0.0.1:8000";
+    string trinoBaseUrl = "http://host.docker.internal:8080";
 
     httplib::Client pythonClient(pythonBaseUrl);
     string pythonUrl = "/create_dfa?regex=" + replaceWhitespace(rawRegEx);
@@ -112,26 +119,11 @@ int main(int argc, char* argv[]) {
     TrinoRestClient client(trinoBaseUrl);
     // -----------------------------------------------------
 
-    string schema = "memory.pattern";
-    SQLUtils utils(tableName, params.outputTableName, schema, dfaData, client);   // initialise utils
+    SQLUtils utils(tableName, params.outputTableName, catalogAndSchema, dfaData, client);   // initialise utils
     vector<string> outputTableColums = params.outputTableColumns;    
-    map<string, string> defines;    
-
-    for(int i = 0; i < defines.size(); i++) {
-        defines[params.alphabet[i]] = params.queries[i];
-    }
-
-    //temp
-    defines = {
-        {"T", "T.crimetype = 'Theft'"},
-        {"C", "C.crimetype = 'Credit Card Fraud'"},
-        {"M", "M.crimetype = 'Money Laundering'"}
-    };
-    //temp
-    string outputTable = tableName;
 
     // main execution; caution: loops until termination
-    run(schema, dfaData, outputTable, outputTableColums, defines, utils, client);
+    run(catalogAndSchema, tableName, outputTable, outputTableColums, twt, twc, tws, sleepFor, defines, dfaData, utils, client);
 
     return 0;
 }

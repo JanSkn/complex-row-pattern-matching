@@ -24,13 +24,16 @@ FROM alpine:latest
 
 WORKDIR /app
 
-# only copy compiled c++ code, python script + requirements.txt and shell script from build
+# only copy required files and directories
+COPY --from=build /app/config.json .
+COPY --from=build /app/dbrex/config ./dbrex/config
+COPY --from=build /app/dbrex/data ./dbrex/data
 COPY --from=build /app/main .
 COPY --from=build /app/dbrex/python ./dbrex/python
 COPY --from=build /app/start.sh .
 
-# set env variable PROD_ENV only for build to avoid make command in start.sh
-ARG PROD_ENV=true
+# set env variable PROD_ENV to avoid make command in start.sh
+ENV PROD_ENV=true
 
 # install dependencies (netcat for nc in start.sh)
 # netcat-openbsd for Alpine instead of netcat
