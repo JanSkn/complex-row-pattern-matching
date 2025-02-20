@@ -59,7 +59,7 @@ const string& twc, const int& tws, const int& sleepFor, map<string, string>& def
             }
             saveCurrentTimeWindow(currentTimeWindow);
 
-            bool lastExec = i+tws-1 == twcValues.size()-1;
+            bool lastExec = i+tws-1 == static_cast<int>(twcValues.size())-1;    // cast size_t to int
             if(lastExec) {
                 utils.createOutputTable(outputTable);
                 firstLoop = true;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
     int tws = params.twSize;
     int sleepFor = params.sleepFor;
 
-    // properly handle docker container termination 
+    // properly handle termination 
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 

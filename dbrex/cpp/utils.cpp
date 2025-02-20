@@ -282,7 +282,7 @@ void SQLUtils::createTable(const string& tableName, const int& numSymbols) {
     string columnName;
     string columnDataType;
 
-    for(size_t i = 0; i < numSymbols; i++) {
+    for(int i = 0; i < numSymbols; i++) {
         for(size_t j = 0; j < this->columns.size(); j++) {
             columnName = "s" + to_string(i) + "_" + get<string>(this->columns[j][0]);
             columnDataType = get<string>(this->columns[j][1]);
@@ -310,7 +310,7 @@ string SQLUtils::replaceTableColumnNames(const string& query, const vector<strin
     
     string result = query;
 
-    for (int i = 0; i < partialMatches.size(); i++) {
+    for(size_t i = 0; i < partialMatches.size(); i++) {
         const string& symbol = partialMatches[i];
         
         // finds symbol.column_name
