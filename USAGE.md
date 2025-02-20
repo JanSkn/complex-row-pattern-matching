@@ -90,14 +90,7 @@ docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
 ```bash
 docker run -d -v dbrex:/app/dbrex/data -v <YOUR_PATH>:/app/dbrex/config --name dbrex ghcr.io/dbrex:latest
 ```
-The argument names must be equivalent to the long option below. 
-Example:
-```json
-{
-  "catalog": "YOUR_CATALOG",
-  "schema": "YOUR_SCHEMA",
-}
-```
+The argument names must be equivalent to the long option below. You can find an example [here](example/example_args.json)
 
 Here is a list of all arguments:
 
