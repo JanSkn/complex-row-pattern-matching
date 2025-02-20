@@ -81,16 +81,19 @@ SHOW TABLES FROM catalog_name.schema_name;
 To give DBrex access to your database, you must pass the catalog, the schema and the table name along with other parameters when starting the DBrex container.
 There are two options to pass the arguments:
 
-1) as command line arguments
+> [!WARNING]
+> The columns in `-q` or `--queries` must be in format `symbol_name.column_name` as in the [example](example/example_args.json).
+
+1. as command line arguments
 ```bash
 docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
 ```
 
-2) In a file called `args.json`.
+2. In a file called `args.json`.
 ```bash
 docker run -d -v dbrex:/app/dbrex/data -v <YOUR_PATH>:/app/dbrex/config --name dbrex ghcr.io/dbrex:latest
 ```
-The argument names must be equivalent to the long option below. You can find an example [here](example/example_args.json)
+The argument names must be equivalent to the long option below. You can find an example [here](example/example_args.json).
 
 Here is a list of all arguments:
 
