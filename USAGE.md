@@ -106,7 +106,6 @@ Here is a list of all arguments:
 | -a | --alphabet | RegEx alphabet |
 | -q | --queries | SQL queries separated by RegEx symbol. Must be same order as the alphabet |
 | -o | --output_table | Name of the output table |
-| -oc | --output_columns | Columns of the output table |
 | -twt | --time_window_type | Time window type (countbased or sliding_window). Only countbased supported at this version |
 | -twc | --tw_column | Name of the column for the time window selection. Values must be integer and in increasing order |
 | -tws | --tw_size | Time window size |
