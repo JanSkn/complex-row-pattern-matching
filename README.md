@@ -91,8 +91,10 @@ Compared to SQL's MATCH_RECOGNIZE:
 
 ## Limitations ⚠️
 
-Your table must contain a column with integers in ascending order of increment 1
+Your table must contain a column with integers in ascending order with a step size of 1.
+
 Regular expression operators `*` (Kleene star) and `+` (Plus) are currently not supported in pattern definitions due to JOIN constraints.
+
 Patterns are limited to finite-length sequences.
 
 ## Hint 💡
