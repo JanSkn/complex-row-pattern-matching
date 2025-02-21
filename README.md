@@ -34,7 +34,7 @@ Once the container is running, the application finds all patterns in the table a
 **Example Docker Command**:
 
 ```bash
-docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/JanSkn/dbrex:latest <args>
 ```
 
 ## Setup & Usage
@@ -91,7 +91,8 @@ Compared to SQL's MATCH_RECOGNIZE:
 
 ## Limitations ⚠️
 
-Regular expression operators `*` (Kleene star) and `+` (Plus) are currently not supported in pattern definitions.
+Your table must contain a column with integers in ascending order of increment 1
+Regular expression operators `*` (Kleene star) and `+` (Plus) are currently not supported in pattern definitions due to JOIN constraints.
 Patterns are limited to finite-length sequences.
 
 ## Hint 💡

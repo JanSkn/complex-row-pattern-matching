@@ -83,12 +83,12 @@ There are two options to pass the arguments:
 
 1. as command line arguments
 ```bash
-docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/dbrex:latest <args>
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/JanSkn/dbrex:latest <args>
 ```
 
 2. In a file called `args.json`.
 ```bash
-docker run -d -v dbrex:/app/dbrex/data -v <YOUR_PATH>:/app/dbrex/config --name dbrex ghcr.io/dbrex:latest
+docker run -d -v dbrex:/app/dbrex/data -v <YOUR_PATH>:/app/dbrex/config --name dbrex ghcr.io/JanSkn/dbrex:latest
 ```
 The argument names must be equivalent to the long option below. You can find an example [here](example/example_args.json).
 
