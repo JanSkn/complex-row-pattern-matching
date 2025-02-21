@@ -19,9 +19,8 @@ void printHelp() {
               << "  -a, --alphabet              RegEx alphabet\n"
               << "  -q, --queries               SQL queries separated by RegEx symbol. Must be same order as the alphabet\n"
               << "  -o, --output_table          Name of the output table\n"
-              << "  -oc, --output_columns       Columns of the output table\n"
               << "  -twt, --time_window_type    Time window type (countbased or sliding_window). Only countbased supported at this version\n"
-              << "  -twc, --tw_column           Name of the column for the time window selection. Values must be integer and in increasing order\n"
+              << "  -twc, --tw_column           Must be integers in asceding order with step size 1\n"
               << "  -tws, --tw_size             Time window size\n"
               << "  -sf, --sleep_for            sleep for n milliseconds after each execution to conserve resources\n"
               << "  -h, --help                  Show this help message\n\n";
@@ -38,7 +37,6 @@ void saveConfigFile(const std::string& configPath, const CLIParams& params) {
         if(!params.alphabet.empty()) config["alphabet"] = params.alphabet;
         if(!params.queries.empty()) config["queries"] = params.queries;
         if(!params.outputTableName.empty()) config["output_table"] = params.outputTableName;
-        if(!params.outputTableColumns.empty()) config["output_columns"] = params.outputTableColumns;
         if(!params.timeWindowType.empty()) config["time_window_type"] = params.timeWindowType;
         if(!params.twColumn.empty()) config["tw_column"] = params.twColumn;
         if(params.twSize > 0) config["tw_size"] = params.twSize;
@@ -85,11 +83,6 @@ CLIParams loadConfigFile(const string& configPath) {
             }
         }
         if(config.contains("output_table")) params.outputTableName = config["output_table"];
-        if(config.contains("output_columns")) {
-            for(const auto& item : config["output_columns"]) {
-                params.outputTableColumns.push_back(item);
-            }
-        }
         if(config.contains("time_window_type")) params.timeWindowType = config["time_window_type"];
         if(config.contains("tw_column")) params.twColumn = config["tw_column"];
         if(config.contains("tw_size")) params.twSize = config["tw_size"];
@@ -147,10 +140,6 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
         } else if(arg == "-o" || arg == "--output_table") {
              if (i + 1 < argc) {
                 params.outputTableName = argv[++i];
-            }
-        } else if(arg == "-oc" || arg == "--output_columns") {
-            while (i + 1 < argc && argv[i + 1][0] != '-') {
-                params.outputTableColumns.push_back(argv[++i]);
             }
         } else if(arg == "-twt" || arg == "--time_window_type") {
             if (i + 1 < argc) {

@@ -20,8 +20,6 @@ void printName();
 void printDfa(const json& dfaData);
 string replaceWhitespace(const string& input);
 string generateUuid();
-vector<int> getCurrentTimeWindow();
-void saveCurrentTimeWindow(const vector<int>& timeWindow);
 
 class SQLUtils {
 public:
@@ -40,15 +38,17 @@ public:
     
     void setup();
     void getColumns();
+    int getProcessedIndex(const string& twc);
+    void saveProcessedIndex(const int& indexValue);
     map<string, vector<vector<string>>> getPredecessors(const vector<tuple<string, string, string>>& transitions);
     vector<vector<string>> getPredecessorPaths(const string& state, const map<string, vector<vector<string>>>& predecessors);
     void getPredecessorTables(json& metadata);
-
     void createTable(const string& tableName, const int& numSymbols);
     string replaceTableColumnNames(const std::string& query, const std::vector<std::string>& symbolNames);
-    string getTimeWindowCondition(const string& columnName, vector<int>& currentTimeWindow);
-    void insertIntoTable(const string& tableName, const string& symbol, const string& predecessorTableName, const string& condition, const string& timeWindowCondition, const vector<string>& partialMatches, const bool& isStartState);
-    void createOutputTable(const string& outputTableName);
+    string getTimeWindowCondition(const string& columnName, const int& tws);
+    void insertIntoTable(const string& tableName, const string& tableNameSymbol, const string& predecessorTableName, const string& condition, const int& processedIndex,
+    const string& twc, const int& tws, const vector<string>& partialMatches, const bool& isStartState);
+    void insertIntoOutputTable(const string& outputTableName);
 };
 
 #endif 

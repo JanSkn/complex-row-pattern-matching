@@ -15,7 +15,6 @@ struct CLIParams {
     vector<string> alphabet;
     vector<string> queries;
     string outputTableName;
-    vector<string> outputTableColumns;
     string timeWindowType;
     string twColumn;
     int twSize;

@@ -100,35 +100,6 @@ vector<string> splitString(const string& input, char delimiter) {
     return tokens;
 }
 
-const string currentTimeWindowFilePath = "dbrex/data/currentTimeWindow.json";
-
-vector<int> getCurrentTimeWindow() {
-    vector<int> timeWindow;
-
-    ifstream infile(currentTimeWindowFilePath);
-    if (infile.is_open()) {
-        json j;
-        infile >> j;
-        infile.close();
-        timeWindow = j["time_window"].get<vector<int>>();
-    } else {
-        timeWindow = {-1, -1};
-        saveCurrentTimeWindow(timeWindow);
-    }
-
-    return timeWindow;
-}
-
-void saveCurrentTimeWindow(const vector<int>& timeWindow) {
-    json j;
-    j["time_window"] = timeWindow;
-
-    ofstream outfile(currentTimeWindowFilePath);
-
-    outfile << j.dump(4);
-    outfile.close();
-}
-
 // Constructor
 SQLUtils::SQLUtils(string& originalTableName, string& outputTableName, string& catalogAndSchema, json& dfaData, TrinoRestClient& client)
     : originalTableName(originalTableName), outputTableName(outputTableName), catalogAndSchema(catalogAndSchema), dfaData(dfaData), client(client) {
@@ -144,7 +115,7 @@ void SQLUtils::setup() {
     ifstream checkMetadataFile("dbrex/data/metadata.json");
     // store both to preserve states when restarting
     // both depend on each other, storing both is important
-    if(checkTransitionsFile && checkMetadataFile) {
+    if(checkTransitionsFile.is_open() && checkMetadataFile.is_open()) {
         checkMetadataFile >> metadata;
         checkTransitionsFile >> transitions;
         cout << "Loaded existing metadata." << endl;
@@ -207,6 +178,35 @@ void SQLUtils::getColumns() {
     transform(originalTableNameToLower.begin(), originalTableNameToLower.end(), originalTableNameToLower.begin(), ::tolower);
     string getColumnsQuery = "SELECT column_name, data_type FROM " + catalog + ".information_schema.columns WHERE table_schema = '"+ schema + "' AND table_name = '" + originalTableNameToLower + "'";
     this->columns = this->client.executeQuery(getColumnsQuery);
+}
+
+const string currentProcessedIndexPath = "dbrex/data/processed_index.json";
+
+int SQLUtils::getProcessedIndex(const string& twc) {
+    int processedIndex;
+
+    ifstream infile(currentProcessedIndexPath);
+    if (infile.is_open()) {
+        json j;
+        infile >> j;
+        infile.close();
+        processedIndex = j["processed_index"].get<int>();
+    } else {
+        processedIndex = get<int>(this->client.executeQuery("SELECT min("+twc+") FROM " + this->catalogAndSchema + "." + this->originalTableName)[0][0]) - 1;   // first execution; -1 so > processedIndex includes first element
+        saveProcessedIndex(processedIndex);
+    }
+
+    return processedIndex;
+}
+
+void SQLUtils::saveProcessedIndex(const int& indexValue) {
+    json j;
+    j["processed_index"] = indexValue;
+
+    ofstream outfile(currentProcessedIndexPath);
+
+    outfile << j.dump(4);
+    outfile.close();
 }
 
 /* 
@@ -293,8 +293,8 @@ void SQLUtils::createTable(const string& tableName, const int& numSymbols) {
             }
         }
         if(i < numSymbols - 1) { // only add if not last element
-                columnsString += ", ";
-            }
+            columnsString += ", ";
+        }
     }
 
     createTableString += columnsString + ")";
@@ -323,34 +323,36 @@ string SQLUtils::replaceTableColumnNames(const string& query, const vector<strin
     return result;
 }
 
-string SQLUtils::getTimeWindowCondition(const string& columnName, vector<int>& currentTimeWindow) {
-    string whereClause = columnName + " BETWEEN " + to_string(currentTimeWindow[0]) + " AND " + to_string(currentTimeWindow[1]); 
+string SQLUtils::getTimeWindowCondition(const string& columnName, const int& tws) {
+    string whereClause = columnName + " BETWEEN s0_" + columnName + " AND s0_" + columnName + " + " + to_string(tws - 1); 
 
     return whereClause;
 }
 
 void SQLUtils::insertIntoTable(const string& tableName, const string& tableNameSymbol,  const string& predecessorTableName, 
-const string& condition, const string& timeWindowCondition, const vector<string>& partialMatches, const bool& isStartState) {
+const string& condition, const int& processedIndex, const string& twc, const int& tws, const vector<string>& partialMatches, const bool& isStartState) {
     string insertStatement;
     string updatedCondition = this->replaceTableColumnNames(condition, partialMatches);
 
-    if(isStartState) {
+    // ordering WHERE conditions after high row-exclusion potential for performance optimisation (if not already done by query optimiser)
+    if(isStartState) {      // insert all matching rows, time window condition only for following states
         insertStatement = 
         "INSERT INTO " + this->catalogAndSchema + "." + tableName + 
-        " SELECT * FROM " + this->catalogAndSchema + "." + this->originalTableName + " " + tableNameSymbol + 
-        " WHERE " + condition + " AND " + timeWindowCondition;
+        " SELECT * FROM " + this->catalogAndSchema + "." + this->originalTableName + " " + tableNameSymbol +
+        " WHERE " + twc + " > " + to_string(processedIndex) + " AND " + updatedCondition; 
     } else {
+        string timeWindowCondition = this->getTimeWindowCondition(twc, tws);
         insertStatement = 
         "INSERT INTO " + this->catalogAndSchema + "." + tableName + 
         " SELECT * FROM " + this->catalogAndSchema + "." + predecessorTableName + 
         " JOIN " + this->catalogAndSchema + "." + this->originalTableName + " " + tableNameSymbol + 
-        " ON " + updatedCondition + " WHERE " + timeWindowCondition;
+        " ON " + twc + " > " + to_string(processedIndex) + " AND " + timeWindowCondition + " AND " + updatedCondition; 
     }
 
     this->client.executeQuery(insertStatement);
 }
 
-void SQLUtils::createOutputTable(const string& outputTableName) {
+void SQLUtils::insertIntoOutputTable(const string& outputTableName) {
     int maxNumSymbols = 0;
     vector<string> resultTables;
     

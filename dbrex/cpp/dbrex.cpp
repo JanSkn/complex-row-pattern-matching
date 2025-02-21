@@ -17,57 +17,39 @@
 using namespace std;
 using json = nlohmann::json;   
 
-void run(string& catalogAndSchema, const string& tableName, const string& outputTable, const vector<string>& outputTableColumns, const string& twt, 
+void run(string& catalogAndSchema, const string& tableName, const string& outputTable, const string& twt, 
 const string& twc, const int& tws, const int& sleepFor, map<string, string>& defineConditions, const json& dfaData, SQLUtils& utils, TrinoRestClient& client) {
-    bool firstLoop = true;
-    // --- get initial values for the time window determination ---
-    DataTable twcValues_dt = client.executeQuery("SELECT " + twc + " FROM " + catalogAndSchema + "." + tableName);
-    vector<int> twcValues;
-    for(Row& row : twcValues_dt) {
-        twcValues.push_back(get<int>(row[0])); 
-    }
-    vector<int> currentTimeWindow = getCurrentTimeWindow();                 // stores start and end index of the current time window, initialised with {-1, -1}
-    int i = (currentTimeWindow[0] == -1) ? 0 : currentTimeWindow[0];        // i is 0 when first execution (= initialisation of currentTimeWindow with -1), else the last processed value 
-    string timeWindowCondition;    
-    // ------------------------------------------------------------
+    bool firstIdleLoop = true;
+
     while(running) {
         this_thread::sleep_for(chrono::milliseconds(sleepFor));             // save ressources
-        // --- update values for time window in case of new insertions ---
-        DataTable newTwcValues = client.executeQuery("SELECT " + twc + " FROM " + catalogAndSchema + "." + tableName + " WHERE " + twc + " > " + to_string(twcValues[twcValues.size()-1]));
-        for(Row& row : newTwcValues) {
-            twcValues.push_back(get<int>(row[0])); 
-        }
-        // ---------------------------------------------------------------
+        // after one execution, all elements until are processed until rows with value > processedIndex
+        int processedIndex = utils.getProcessedIndex(twc);
+        int newIndex = get<int>(client.executeQuery("SELECT max("+twc+") FROM " + catalogAndSchema + "." + tableName)[0][0]);
 
-        while(currentTimeWindow[1] < twcValues[twcValues.size()-1]) {   // example: 15 rows, tw size: 5: ..., 8-13, 9-14, 10-15, stop then because everything is covered
-            cout << "Executing (" + to_string(i+1) + "/" + to_string(twcValues.size()-min(tws, static_cast<int>(twcValues.size())-1)) + ")..." << endl;
-            
-            currentTimeWindow[0] = twcValues[i];
-            currentTimeWindow[1] = twcValues[min(i+tws, static_cast<int>(twcValues.size()-1))];     // min if user's tws is greater than num of rows
-            i++;
-
+        if(processedIndex < newIndex) {             
+            cout << "Executing..." << endl;
+         
             for(const auto& [state, symbol, _, partialMatchTableName] : utils.transitions) {
                 string condition = defineConditions[symbol];
                 vector<string> partialMatch = utils.metadata[partialMatchTableName]["predecessor_symbols"];
                 
-                timeWindowCondition = utils.getTimeWindowCondition(twc, currentTimeWindow);     // gets appended to the insert statement to simulate time windows
-
                 bool isStartState = state == dfaData["start_state"].get<string>();
                 string predecessorTableName = utils.metadata[partialMatchTableName]["predecessor"];
         
-                utils.insertIntoTable(partialMatchTableName, symbol, predecessorTableName, condition, timeWindowCondition, partialMatch, isStartState);
+                utils.insertIntoTable(partialMatchTableName, symbol, predecessorTableName, condition, processedIndex, twc, tws, partialMatch, isStartState);
             }
-            saveCurrentTimeWindow(currentTimeWindow);
 
-            bool lastExec = i+tws-1 == static_cast<int>(twcValues.size())-1;    // cast size_t to int
-            if(lastExec) {
-                utils.createOutputTable(outputTable);
-                firstLoop = true;
-            }
+            utils.saveProcessedIndex(newIndex);
+            
+            utils.insertIntoOutputTable(outputTable);
+            
+            firstIdleLoop = true;
         }
-        if(firstLoop) {
+
+        if(firstIdleLoop) {
             cout << "Idling..." << endl;
-            firstLoop = false;
+            firstIdleLoop = false;
         }
     }
 }
@@ -95,7 +77,6 @@ int main(int argc, char* argv[]) {
         defines[params.alphabet[i]] = params.queries[i];
     }
     string outputTable = params.outputTableName;
-    vector<string> outputColumns = params.outputTableColumns;
     string twt = params.timeWindowType;
     string twc = params.twColumn;
     int tws = params.twSize;
@@ -107,7 +88,7 @@ int main(int argc, char* argv[]) {
 
     // ----- initialise Python API and Trino (SQL) API -----
     string pythonBaseUrl = "http://127.0.0.1:8000";
-    string trinoBaseUrl = "http://host.docker.internal:8080";
+    string trinoBaseUrl = "http://127.0.0.1:8080";
 
     httplib::Client pythonClient(pythonBaseUrl);
     string pythonUrl = "/create_dfa?regex=" + replaceWhitespace(rawRegEx);
@@ -120,10 +101,9 @@ int main(int argc, char* argv[]) {
     // -----------------------------------------------------
 
     SQLUtils utils(tableName, params.outputTableName, catalogAndSchema, dfaData, client);   // initialise utils
-    vector<string> outputTableColums = params.outputTableColumns;    
 
     // main execution; caution: loops until termination
-    run(catalogAndSchema, tableName, outputTable, outputTableColums, twt, twc, tws, sleepFor, defines, dfaData, utils, client);
+    run(catalogAndSchema, tableName, outputTable, twt, twc, tws, sleepFor, defines, dfaData, utils, client);
 
     return 0;
 }
