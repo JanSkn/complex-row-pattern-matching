@@ -12,7 +12,7 @@ services:
   dbrex:
     build:
       context: .
-      image:  ghcr.io/JanSkn/dbrex:latest
+      image:  ghcr.io/janskn/dbrex:latest
       container_name: dbrex
       environment:
         - PROD_ENV=true
