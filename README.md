@@ -34,7 +34,7 @@ Once the container is running, the application finds all patterns in the table a
 **Example Docker Command**:
 
 ```bash
-docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/JanSkn/dbrex:latest <args>
+docker run -d -v dbrex:/app/dbrex/data --name dbrex ghcr.io/janskn/dbrex:latest <args>
 ```
 
 ## Setup & Usage
