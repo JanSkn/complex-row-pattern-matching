@@ -5,13 +5,14 @@ services:
     image: trinodb/trino:latest
     ports:  # expose to host so that users can use connectors with trino and use the UI
       - "8080:8080"
+    container_name: trino
     volumes:
       - ./trino/etc/catalog:/etc/trino/catalog  # bind mount for connectors
   
   dbrex:
     build:
       context: .
-      image:  # TODO
+      image:  ghcr.io/JanSkn/dbrex:latest
       container_name: dbrex
       environment:
         - PROD_ENV=true

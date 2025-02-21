@@ -22,6 +22,8 @@ RUN apk add --no-cache \
 # === runtime image ===
 FROM alpine:latest
 
+LABEL org.opencontainers.image.source=https://github.com/JanSkn/complex-row-pattern-matching
+
 WORKDIR /app
 
 # only copy required files and directories
