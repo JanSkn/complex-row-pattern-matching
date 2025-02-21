@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
     // ----- initialise Python API and Trino (SQL) API -----
     string pythonBaseUrl = "http://127.0.0.1:8000";
-    string trinoBaseUrl = "http://127.0.0.1:8080";
+    string trinoBaseUrl = "http://host.docker.internal:8080";
 
     httplib::Client pythonClient(pythonBaseUrl);
     string pythonUrl = "/create_dfa?regex=" + replaceWhitespace(rawRegEx);
