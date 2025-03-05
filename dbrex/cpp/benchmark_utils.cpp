@@ -140,12 +140,14 @@ size_t BenchmarkUtils::getUsedMemory(const SQLUtils utils) {
         } else if(columnDataType.length() > 7 && columnDataType.substr(0, 7) == "varchar") {
             // Extract the length from VARCHAR(n)
             size_t varcharLength = 0;
-            try {
-                varcharLength = stoi(columnDataType.substr(8, columnDataType.length() - 9));
-            } catch (const invalid_argument& e) {
-                cerr << "Error parsing VARCHAR length: " << e.what() << endl;
+            if (columnDataType.length() > 9) {
+                try {   
+                    varcharLength = stoi(columnDataType.substr(8, columnDataType.length() - 9));
+                } catch (const invalid_argument& e) {
+                    cerr << "Error parsing VARCHAR length: " << e.what() << endl;
+                }
+                memoryPerRow += varcharLength; // VARCHAR uses 1 byte per character
             }
-            memoryPerRow += varcharLength; // VARCHAR uses 1 byte per character
         } else if (columnDataType.length() > 7 && columnDataType.substr(0, 7) == "decimal") {
             // DECIMAL(p, s) uses variable space, but we can assume 8 bytes as a rough estimate
             memoryPerRow += 8;
