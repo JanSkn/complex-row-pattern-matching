@@ -22,7 +22,8 @@ void printHelp() {
               << "  -twt, --time_window_type    Time window type (countbased or sliding_window). Only countbased supported at this version\n"
               << "  -twc, --tw_column           Must be integers in asceding order with step size 1\n"
               << "  -tws, --tw_size             Time window size\n"
-              << "  -sf, --sleep_for            sleep for n milliseconds after each execution to conserve resources\n"
+              << "  -sf, --sleep_for            Sleep for n milliseconds after each execution to conserve resources\n"
+              << "  --benchmark                 Optional. Runs benchmark on predefined table. Use only this for benchmarking\n"
               << "  -h, --help                  Show this help message\n\n";
 }
 
@@ -87,6 +88,7 @@ CLIParams loadConfigFile(const string& configPath) {
         if(config.contains("tw_column")) params.twColumn = config["tw_column"];
         if(config.contains("tw_size")) params.twSize = config["tw_size"];
         if(config.contains("sleep_for")) params.sleepFor = config["sleep_for"];
+        params.benchmark = config.contains("benchmark");
 
     } catch(const exception& e) {
         cerr << "Error loading config file: " << e.what() << endl;
@@ -98,6 +100,7 @@ CLIParams loadConfigFile(const string& configPath) {
 
 CLIParams parseCommandLine(int argc, char* argv[]) {
     CLIParams params;
+    params.benchmark = false;
 
     const string configPath = "dbrex/config/args.json";
     ifstream configFile(configPath);
@@ -109,6 +112,11 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
 
     for(int i = 1; i < argc; ++i) {
         string arg = argv[i];
+
+        if(arg == "--benchmark") {  
+            params.benchmark = true;
+            return params;
+        } 
 
         if(arg == "-h" || arg == "--help") {
             printHelp();

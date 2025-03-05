@@ -17,7 +17,7 @@
 using namespace std;
 using json = nlohmann::json;   
 
-void run(string& catalogAndSchema, const string& tableName, const string& outputTable, const string& twt, 
+void runDBrex(string& catalogAndSchema, const string& tableName, const string& outputTable, const string& twt, 
 const string& twc, const int& tws, const int& sleepFor, map<string, string>& defineConditions, const json& dfaData, SQLUtils& utils, TrinoRestClient& client) {
     bool firstIdleLoop = true;
 
@@ -54,56 +54,16 @@ const string& twc, const int& tws, const int& sleepFor, map<string, string>& def
     }
 }
 
-int main(int argc, char* argv[]) {  
-    // plot docker image name in terminal
-    printName();  
+void benchmarkDBrex(string& catalogAndSchema, const string& tableName, const string& outputTable, const int& processedIndex, 
+const string& column, const int& tws, map<string, string>& defineConditions, const json& dfaData, SQLUtils& utils, TrinoRestClient& client) {    
+    for(const auto& [state, symbol, _, partialMatchTableName] : utils.transitions) {
+        string condition = defineConditions[symbol];
+        vector<string> partialMatch = utils.metadata[partialMatchTableName]["predecessor_symbols"];
+        
+        bool isStartState = state == dfaData["start_state"].get<string>();
+        string predecessorTableName = utils.metadata[partialMatchTableName]["predecessor"];
 
-    ifstream configFile("dbrex/config/args.json");
-
-    if (!configFile && argc == 1) {
-        std::cout << "No args.json or arguments provided.\n\n";
-        printHelp();
-        return 1;
-    }
-
-    CLIParams params = parseCommandLine(argc, argv);
-    string catalog = params.catalog;
-    string schema = params.schema;
-    string catalogAndSchema = catalog + "." + schema;
-    string tableName = params.tableName;
-    string rawRegEx = params.pattern;                       // ! explicit use of parenthesises, example: "A B | C" evaluates to "(A B) | C" --> instead make A (B | C)
-    map<string, string> defines;                            // alphabet and queries combined
-    for(size_t i = 0; i < params.alphabet.size(); i++) {
-        defines[params.alphabet[i]] = params.queries[i];
-    }
-    string outputTable = params.outputTableName;
-    string twt = params.timeWindowType;
-    string twc = params.twColumn;
-    int tws = params.twSize;
-    int sleepFor = params.sleepFor;
-
-    // properly handle termination 
-    signal(SIGINT, signalHandler);
-    signal(SIGTERM, signalHandler);
-
-    // ----- initialise Python API and Trino (SQL) API -----
-    string pythonBaseUrl = "http://127.0.0.1:8000";
-    string trinoBaseUrl = "http://host.docker.internal:8080";
-
-    httplib::Client pythonClient(pythonBaseUrl);
-    string pythonUrl = "/create_dfa?regex=" + replaceWhitespace(rawRegEx);
-    auto response = pythonClient.Get(pythonUrl.c_str());
-    json dfaData = json::parse(response->body);
-    // plot DFA in terminal
-    printDfa(dfaData);
-
-    TrinoRestClient client(trinoBaseUrl);
-    // -----------------------------------------------------
-
-    SQLUtils utils(tableName, params.outputTableName, catalogAndSchema, dfaData, client);   // initialise utils
-
-    // main execution; caution: loops until termination
-    run(catalogAndSchema, tableName, outputTable, twt, twc, tws, sleepFor, defines, dfaData, utils, client);
-
-    return 0;
+        utils.insertIntoTable(partialMatchTableName, symbol, predecessorTableName, condition, processedIndex, column, tws, partialMatch, isStartState);
+    }    
+    utils.insertIntoOutputTable(outputTable);
 }

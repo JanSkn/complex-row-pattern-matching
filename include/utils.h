@@ -20,6 +20,7 @@ void printName();
 void printDfa(const json& dfaData);
 string replaceWhitespace(const string& input);
 string generateUuid();
+vector<string> splitString(const string& input, char delimiter);
 
 class SQLUtils {
 public:
@@ -34,7 +35,7 @@ public:
     TrinoRestClient& client;
 
     // Constructor
-    SQLUtils(string& originalTableName, string& outputTableName, string& schema, json& dfaData, TrinoRestClient& client);
+    SQLUtils(string& originalTableName, string& outputTableName, string& catalogAndSchema, json& dfaData, TrinoRestClient& client);
     
     void setup();
     void getColumns();

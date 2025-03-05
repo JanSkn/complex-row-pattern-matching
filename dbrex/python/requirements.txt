@@ -1,3 +1,6 @@
 fastapi
 uvicorn
 pyformlang==1.0.10
+pandas
+seaborn
+matplotlib

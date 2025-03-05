@@ -112,8 +112,6 @@ TrinoRestClient::~TrinoRestClient() {
                         currentRow.push_back(item.get<float>());
                     } else if(item.is_boolean()) {
                         currentRow.push_back(item.get<bool>());
-                    } else {
-                        cerr << "Unknown data type." << endl;
                     }
                 }
                 queryResult.push_back(currentRow);

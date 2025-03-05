@@ -20,6 +20,7 @@ struct CLIParams {
     int twSize;
     int twStepSize;
     int sleepFor;
+    bool benchmark;
 };
 
 void printHelp();

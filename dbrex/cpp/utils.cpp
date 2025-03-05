@@ -72,6 +72,7 @@ string replaceWhitespace(const string& input) {
 }
 
 // simulate uuid with "_" instead of "-" due to SQL naming restrictions
+// ! Table name length must be <= 63, so shorter uuid
 string generateUuid() {
     random_device rd;
     mt19937 gen(rd());
@@ -79,11 +80,9 @@ string generateUuid() {
 
     stringstream ss;
     ss << hex << setfill('0');
-    ss << setw(8) << dis(gen) << "_";
-    ss << setw(4) << ((dis(gen) & 0x0FFF) | 0x4000) << "_";
-    ss << setw(4) << ((dis(gen) & 0x3FFF) | 0x8000) << "_";
-    ss << setw(4) << (dis(gen) & 0xFFFF) << "_";
-    ss << setw(12) << dis(gen) << dis(gen);
+    ss << setw(8) << dis(gen); 
+    ss << setw(4) << (dis(gen) & 0xFFFF);  
+    ss << setw(4) << (dis(gen) & 0xFFFF);  
 
     return ss.str();
 }
@@ -348,7 +347,6 @@ const string& condition, const int& processedIndex, const string& twc, const int
         " JOIN " + this->catalogAndSchema + "." + this->originalTableName + " " + tableNameSymbol + 
         " ON " + twc + " > " + to_string(processedIndex) + " AND " + timeWindowCondition + " AND " + updatedCondition; 
     }
-
     this->client.executeQuery(insertStatement);
 }
 

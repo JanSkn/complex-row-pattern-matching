@@ -4,7 +4,6 @@
     "alphabet": ["T", "C", "M"],
     "queries": ["T.crimetype = 'Theft'", "C.crimetype = 'Credit Card Fraud'", "M.crimetype = 'Money Laundering'"],
     "output_table": "CrimeTableResult",
-    "output_columns": ["T_id", "C_id", "M_id"],
     "time_window_type": "countbased",
     "tw_column": "id",
     "tw_size": 50,
