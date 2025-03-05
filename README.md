@@ -29,7 +29,9 @@ Once the container is running, the application finds all patterns in the table a
 > DBrex will listen to your database table as long as the container is running. Stop the container if not needed.
 
 > [!WARNING]
-> When using Docker, make sure to mount a volume with `-v dbrex:/app/dbrex/data` in your Docker command. This step is crucial as without it DBrex restarts all computations after container restart.
+> 1) When using Docker, make sure to mount a volume with `-v dbrex:/app/dbrex/data` in your Docker command. This step is crucial as without it DBrex restarts all computations after container restart.
+>
+> 2) If you are on Linux, make sure to add `--add-host=host.docker.internal:host-gateway`
 
 **Example Docker Command**:
 
@@ -78,7 +80,6 @@ While traditional CEP engines offer support for data streams, DBrex provides:
 ### SQL MATCH_RECOGNIZE
 Compared to SQL's MATCH_RECOGNIZE:
 
-- Better performance through state preservation
 - Simpler syntax and easier maintenance
 - Efficient handling of new data through incremental processing
 
@@ -100,6 +101,12 @@ Patterns are limited to finite-length sequences.
 ## Hint 💡
 
 You can see the magic happen at http://127.0.0.1:8080/ui/# - to log in, enter an arbitrary username.
+
+## Benchmarks
+
+Find performance evalutations [here](benchmarks/sort_dataset.py).
+
+Underlying data set is from [kaggle](https://www.kaggle.com/datasets/stevieknox/montreal-crime-data).
 
 ## License 📜
 
