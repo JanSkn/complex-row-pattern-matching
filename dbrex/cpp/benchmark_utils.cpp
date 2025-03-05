@@ -137,7 +137,7 @@ size_t BenchmarkUtils::getUsedMemory(const SQLUtils utils) {
             memoryPerRow += 4; 
         } else if(columnDataType == "timestamp") {
             memoryPerRow += 8; 
-        } else if(columnDataType.substr(0, 7) == "varchar") {
+        } else if(columnDataType.length() > 7 && columnDataType.substr(0, 7) == "varchar") {
             // Extract the length from VARCHAR(n)
             size_t varcharLength = 0;
             try {
@@ -146,7 +146,7 @@ size_t BenchmarkUtils::getUsedMemory(const SQLUtils utils) {
                 cerr << "Error parsing VARCHAR length: " << e.what() << endl;
             }
             memoryPerRow += varcharLength; // VARCHAR uses 1 byte per character
-        } else if (columnDataType.substr(0, 7) == "decimal") {
+        } else if (columnDataType.length() > 7 && columnDataType.substr(0, 7) == "decimal") {
             // DECIMAL(p, s) uses variable space, but we can assume 8 bytes as a rough estimate
             memoryPerRow += 8;
         }
