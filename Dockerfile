@@ -39,10 +39,18 @@ ENV PROD_ENV=true
 
 # install dependencies (netcat for nc in start.sh)
 # netcat-openbsd for Alpine instead of netcat
+# first 7 for matplotlib
 # python venv required by newer Alpine versions to protect system Python
 # bash must be installed
 # activate venv with . as it is POSIX conform
 RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    build-base \
+    freetype-dev \
+    libpng-dev \
+    openblas-dev \
     libcurl \
     python3 \
     py3-pip \
