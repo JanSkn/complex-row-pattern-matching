@@ -104,7 +104,7 @@ You can see the magic happen at http://127.0.0.1:8080/ui/# - to log in, enter an
 
 ## Benchmarks
 
-Find performance evalutations [here](benchmarks/sort_dataset.py).
+Find performance evalutations [here](benchmarks/output).
 
 Underlying data set is from [kaggle](https://www.kaggle.com/datasets/stevieknox/montreal-crime-data).
 
