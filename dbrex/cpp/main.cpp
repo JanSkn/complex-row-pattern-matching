@@ -24,7 +24,7 @@ using namespace chrono;
 using json = nlohmann::json;   
 
 string pythonBaseUrl = "http://127.0.0.1:8000";
-string trinoBaseUrl = "http://host.docker.internal:8080"; 
+string trinoBaseUrl = "http://127.0.0.1:8080"; 
 httplib::Client pythonClient(pythonBaseUrl);
 TrinoRestClient client(trinoBaseUrl);
 
@@ -80,8 +80,11 @@ void benchmark() {
     // for MR to determine first and last elements of a pattern for time window
     // a pattern can have more than one first and last element, example (A|B)(C|D)
     vector<pair<vector<string>, vector<string>>> firstAndLastSymbols = {  
-        {{"T", "C"}, {"M"}}, 
-        {{"T"}, {"C"}}
+        {{"M"}, {"H"}}, 
+        {{"T"}, {"M"}},
+        {{"H"}, {"V"}},
+        {{"T"}, {"C"}},
+        {{"H"}, {"C"}}
     };
     size_t numTests = patterns.size();
     int numExecutionsPerTest = 3;
