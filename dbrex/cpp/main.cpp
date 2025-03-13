@@ -28,7 +28,7 @@ string trinoBaseUrl = "http://host.docker.internal:8080";
 httplib::Client pythonClient(pythonBaseUrl);
 TrinoRestClient client(trinoBaseUrl);
 
-void benchmark() {
+void benchmark(const CLIParams& params) {
     cout << "Starting benchmarking..." << endl;
     // --- Setup ---
     deleteSQLUtilsJSONs(); // initial cleaning
@@ -40,7 +40,7 @@ void benchmark() {
     string benchmarkTableName = tableName + "Benchmark";
     string outputTableName = benchmarkTableName + "Result";
     string column = "id";
-    vector<int> differentTws = {50, 100, 200, 500, 10000};
+    vector<int> differentTws = {100, 200, 500, 10000};
 
     vector<string> patterns = {
         "M D H",
@@ -88,7 +88,7 @@ void benchmark() {
     };
     size_t numTests = patterns.size();
     int numExecutionsPerTest = 3;
-    int insertBatchSize = 2;
+    int insertBatchSize = 1000;
     int maxIndex = get<int>(client.executeQuery("SELECT max("+column+") FROM " + catalogAndSchema + "." + tableName)[0][0]);
     BenchmarkUtils butils(tableName, benchmarkTableName, catalogAndSchema, client);
     butils.deleteBenchmarkTableEntries(benchmarkTableName);
@@ -125,7 +125,8 @@ void benchmark() {
             duration<double> dbrexTotalLatency(0.0);
             duration<double> mrTotalLatency(0.0);
 
-            for (size_t i = 0; i < numTests; ++i) {
+            size_t benchmarkTestNum = params.benchmarkTestNum;
+            for (size_t i = benchmarkTestNum; i < numTests; ++i) {
                 const string& benchmarkFilePath = benchmarkResultsDirectory + "/" + whitespaceReplacedPatterns[i] + ".csv";
                 SQLUtils utils(benchmarkTableName, outputTableName, catalogAndSchema, allDfaData[i], client);
 
@@ -217,7 +218,7 @@ int main(int argc, char* argv[]) {
     ifstream configFile("dbrex/config/args.json");
 
     if (!configFile && argc == 1) {
-        std::cout << "No args.json or arguments provided.\n\n";
+        cout << "No args.json or arguments provided.\n\n";
         printHelp();
         return 1;
     }
@@ -225,7 +226,7 @@ int main(int argc, char* argv[]) {
     CLIParams params = parseCommandLine(argc, argv);
 
     if(params.benchmark) {
-        benchmark();
+        benchmark(params);
     } else {
         run(params);
     }

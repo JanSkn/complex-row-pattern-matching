@@ -25,6 +25,12 @@ done
 echo "FastAPI server is ready"
 
 echo "Starting C++ program..."
+echo "Passed arguments: $@"
+echo "Number of arguments: $#"
+for arg in "$@"; do
+    echo "  Arg: $arg"
+done
+
 ./main "$@"
 
 echo "Stopping FastAPI server..."

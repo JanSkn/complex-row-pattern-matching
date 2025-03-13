@@ -116,43 +116,8 @@ void BenchmarkUtils::insertBatch(const string& column, const int& batchSize, con
 
 // estimation without overhead, only #cells x #datatype size
 size_t BenchmarkUtils::getUsedMemory(const SQLUtils utils) {
-    size_t memoryPerRow = 0; // in bytes
-
-    for (size_t i = 0; i < this->columns.size(); i++) {
-        string columnDataType = get<string>(this->columns[i][1]);
-
-        // Convert columnDataType to lowercase
-        transform(columnDataType.begin(), columnDataType.end(), columnDataType.begin(), ::tolower);
-
-        // Add memory usage based on the data type
-        if(columnDataType == "integer") {
-            memoryPerRow += 4; 
-        } else if(columnDataType == "bigint") {
-            memoryPerRow += 8; 
-        } else if(columnDataType == "double") {
-            memoryPerRow += 8; 
-        } else if(columnDataType == "boolean") {
-            memoryPerRow += 1; 
-        } else if(columnDataType == "date") {
-            memoryPerRow += 4; 
-        } else if(columnDataType == "timestamp") {
-            memoryPerRow += 8; 
-        } else if(columnDataType.length() > 7 && columnDataType.substr(0, 7) == "varchar") {
-            // Extract the length from VARCHAR(n)
-            size_t varcharLength = 0;
-            if (columnDataType.length() > 9) {
-                try {   
-                    varcharLength = stoi(columnDataType.substr(8, columnDataType.length() - 9));
-                } catch (const invalid_argument& e) {
-                    cerr << "Error parsing VARCHAR length: " << e.what() << endl;
-                }
-                memoryPerRow += varcharLength; // VARCHAR uses 1 byte per character
-            }
-        } else if (columnDataType.length() > 7 && columnDataType.substr(0, 7) == "decimal") {
-            // DECIMAL(p, s) uses variable space, but we can assume 8 bytes as a rough estimate
-            memoryPerRow += 8;
-        }
-    }
+    // estimation based on  CREATE TABLE IF NOT EXISTS postgres.public.crimedata (id integer, category varchar(31), date date, postal_code varchar(7), city varchar(40), neighbourhood varchar(40), year integer, count integer, longitude double, latitude double);
+    size_t memoryPerRow = 150; // in bytes
 
     size_t totalMemoryUsage = 0;
 

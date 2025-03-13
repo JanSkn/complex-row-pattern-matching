@@ -5,6 +5,8 @@ example/
 media/
 build/
 
+*.png
+*.csv
 dbrex/config/args.json
 dbrex/data/*.json
 USAGE.md

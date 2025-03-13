@@ -101,6 +101,7 @@ CLIParams loadConfigFile(const string& configPath) {
 CLIParams parseCommandLine(int argc, char* argv[]) {
     CLIParams params;
     params.benchmark = false;
+    params.benchmarkTestNum = 0;
 
     const string configPath = "dbrex/config/args.json";
     ifstream configFile(configPath);
@@ -115,6 +116,10 @@ CLIParams parseCommandLine(int argc, char* argv[]) {
 
         if(arg == "--benchmark") {  
             params.benchmark = true;
+
+            if(i + 1 < argc && argv[i + 1][0] != '-') {
+                params.benchmarkTestNum = stoi(argv[++i]);
+            }
             return params;
         } 
 
