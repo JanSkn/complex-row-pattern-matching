@@ -6,8 +6,8 @@
 
 # DBrex 👋
 
-![Version](https://img.shields.io/github/v/release/JanSkn/complex-row-pattern)
-![GitHub top language](https://img.shields.io/github/languages/top/janskn/complex-row-pattern)
+![Version](https://img.shields.io/github/v/release/JanSkn/complex-row-pattern-matching)
+![GitHub top language](https://img.shields.io/github/languages/top/janskn/complex-row-pattern-matching)
 
 Introducing **DBrex**, a light-weighted **pattern matching application** for **databases** that uses regular expressions and deterministic finite automata (DFA) to efficiently detect patterns in SQL tables.
 
