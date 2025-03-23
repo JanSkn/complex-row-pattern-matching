@@ -133,12 +133,266 @@ double BenchmarkUtils::getThroughput(const SQLUtils utils, const int& batchSize,
     double throughput = 0;
 
     for(const auto& [tableName, values] : utils.metadata.items()) {
-        int numRows = get<int>(client.executeQuery("SELECT COUNT(*) FROM " + catalogAndSchema + "." + tableName)[0][0]);
+        int numRows = get<int>(this->client.executeQuery("SELECT COUNT(*) FROM " + catalogAndSchema + "." + tableName)[0][0]);
         throughput += numRows * batchSize;
     }
 
     return throughput/latency.count();
 }
+
+duration<double> BenchmarkUtils::benchmarkSelfJoins(const size_t& testNum, const size_t& twNum) {
+    // TWS: {50, 100, 200}
+    vector<vector<vector<string>>> selfJoins = {   
+        {{"SELECT M.*, T.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'"},
+        },
+
+        {{"SELECT M.*, T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'"},
+        },
+
+        {{"SELECT M.*, T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'"}
+        },
+
+        {{"SELECT M.*, T.*, C.*, H.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.*, H.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'"},
+        {"SELECT M.*, T.*, C.*, H.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
+        "AND T.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'"}
+        },
+
+        // disjunction --> >1 JOIN requests
+        {{"SELECT M.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 49 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"
+        },
+        {"SELECT M.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 99 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"
+        },
+        {"SELECT M.*, C.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT T.*, C.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 199 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"
+        },
+        },
+        {{"SELECT M.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT M.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 49 "
+        "WHERE M.category = 'Mischief'",
+
+        "SELECT T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN T.id AND T.id + 49 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'",
+        
+        "SELECT T.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 49 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN T.id AND T.id + 49 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"},
+        {"SELECT M.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT M.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 99 "
+        "WHERE M.category = 'Mischief'",
+
+        "SELECT T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN T.id AND T.id + 99 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'",
+        
+        "SELECT T.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 99 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN T.id AND T.id + 99 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"},
+        {"SELECT M.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'",
+        
+        "SELECT M.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark M "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN M.id AND M.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN M.id AND M.id + 199 "
+        "WHERE M.category = 'Mischief'",
+
+        "SELECT T.*, C.*, H.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
+        "AND H.id BETWEEN T.id AND T.id + 199 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'",
+        
+        "SELECT T.*, C.*, V.* "
+        "FROM postgres.public.crimedatabenchmark T "
+        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
+        "AND C.id BETWEEN T.id AND T.id + 199 "
+        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
+        "AND V.id BETWEEN T.id AND T.id + 199 "
+        "WHERE T.category = 'Theft in / from a motor vehicle'"}
+        }
+    };
+
+    vector<vector<string>> currentTest = selfJoins[testNum];        
+    vector<string> currentTestTW = currentTest[twNum];
+
+    auto sjStart = high_resolution_clock::now();
+    for(string testJoin : currentTestTW) {
+        this->client.executeQuery(testJoin);
+    }
+    auto sjEnd = high_resolution_clock::now();
+
+    return sjEnd - sjStart;
+}
+
 void BenchmarkUtils::benchmarkMR(const SQLUtils utils, const string& benchmarkTableName, const string& pattern, const string& column, 
 const map<string, string>& defines, const pair<vector<string>, vector<string>>& firstAndLastSymbols, const int& tws, const int& batchSize) {    
     string adjustedPattern = adjustPattern(pattern);

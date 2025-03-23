@@ -37,6 +37,7 @@ public:
     void insertBatch(const string& column, const int& batchSize, const int& startIndex);
     size_t getUsedMemory(const SQLUtils utils);
     double getThroughput(const SQLUtils utils, const int& batchSize, duration<double> latency);
+    duration<double> benchmarkSelfJoins(const size_t& testNum, const size_t& twNum);
     void benchmarkMR(const SQLUtils utils, const string& benchmarkTableName, const string& pattern, const string& column, 
     const map<string, string>& defines, const pair<vector<string>, vector<string>>& firstAndLastSymbols, const int& tws, const int& batchSize);
 };

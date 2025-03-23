@@ -36,58 +36,70 @@ void benchmark(const CLIParams& params) {
     const string benchmarkResultsDirectory = "benchmarks";
 
     string catalogAndSchema = "postgres.public";
-    string tableName = "crimedata";
+    string tableName = "crimedata";                         // WARNING - if changed, need to change in benchmarkSelfJoins
     string benchmarkTableName = tableName + "Benchmark";
     string outputTableName = benchmarkTableName + "Result";
-    string column = "id";
-    vector<int> differentTws = {100, 200, 500, 10000};
-
+    string column = "id";                                   // WARNING - if changed, need to change in benchmarkSelfJoins
+    vector<int> differentTws = {50, 100, 200};   // WARNING - if changed, need to change in benchmarkSelfJoins
+    
     vector<string> patterns = {
-        "M D H",
-        "T C M",
-        "H T V",
-        "T C",
-        "H (T | V) M C"
+        "M T",
+        "M T C",
+        "M T C H"
+        "M T C H V"
+        "(M | T) C",
+        "(M | T) C (H | V)"
     };
     vector<map<string, string>> defines = {
-        {   // High-risk neighbourhood cluster, unconditional defines
-            {"M", "M.neighbourhood = 'Montréal-Nord'"},
-            {"D", "D.neighbourhood = 'Downtown Montreal'"},
-            {"H", "H.neighbourhood = 'Centre-Sud'"}
+        {   
+            {"M", "M.category = 'Mischief'"},
+            {"T", "T.category = 'Theft in / from a motor vehicle'"},
         },
-        {   // Close sequence of offences, conditional defines
+        {   
+            {"M", "M.category = 'Mischief'"},
+            {"T", "T.category = 'Theft in / from a motor vehicle'"},
+            {"C", "C.category = 'Confirmed Theft'"}
+        },
+        {   
+            {"M", "M.category = 'Mischief'"},
             {"T", "T.category = 'Theft in / from a motor vehicle'"},
             {"C", "C.category = 'Confirmed Theft'"},
-            {"M", "M.category = 'Mischief' AND T.city = C.city AND C.city = M.city AND DATE_DIFF('day', T.date, M.date) <= 7"}
+            {"H", "H.category = 'Home Invasion'"}
         },
-        {   // Geographically related property offences, conditional defines
-            {"H", "H.category = 'Home Invasion'"},
+        {   
+            {"M", "M.category = 'Mischief'"},
             {"T", "T.category = 'Theft in / from a motor vehicle'"},
-            {"V", "V.category = 'Motor vehicle theft' AND ABS(H.longitude - V.longitude) < 0.02"}
-        },
-        {   // Multi-city cross-Neighbourhood offences, conditional defines
-            {"T", "T.category = 'Theft in / from a motor vehicle' AND T.city IN ('MONTREAL', 'MONTREAL-NORD')"},
-            {"C", "C.category = 'Confirmed Theft' AND C.city IN ('SAINT-LEONARD', 'SAINT-LAURENT') AND T.neighbourhood != C.neighbourhood"}
-        },
-        {   //  Organised criminal activities or specific crime series, conditional defines
+            {"C", "C.category = 'Confirmed Theft'"},
             {"H", "H.category = 'Home Invasion'"},
-            {"T", "T.category = 'Theft in / from a motor vehicle' AND T.city IN ('MONTREAL', 'MONTREAL-NORD')"},
-            {"V", "V.category = 'Motor vehicle theft' AND (V.neighbourhood IN ('Downtown Montreal', 'Mercier') OR T.neighbourhood IN ('Plateau Mont-Royal', 'Centre-Sud'))"},
-            {"M", "M.category = 'Mischief' AND ABS(H.longitude - M.longitude) < 0.02 AND M.year = H.year"},
-            {"C", "C.category = 'Confirmed Theft' AND C.city IN ('SAINT-LEONARD', 'SAINT-LAURENT') AND M.neighbourhood != C.neighbourhood AND DATE_DIFF('day', C.date, H.date) <= 90"}
+            {"V", "V.category = 'Motor vehicle theft'"}
+        },
+        {   
+            {"M", "M.category = 'Mischief'"},
+            {"T", "T.category = 'Theft in / from a motor vehicle'"},
+            {"C", "C.category = 'Confirmed Theft'"}
+        },
+        {
+            {"M", "M.category = 'Mischief'"},
+            {"T", "T.category = 'Theft in / from a motor vehicle'"},
+            {"C", "C.category = 'Confirmed Theft'"},
+            {"H", "H.category = 'Home Invasion'"},
+            {"V", "V.category = 'Motor vehicle theft'"}
         }
     };
+
     // for MR to determine first and last elements of a pattern for time window
     // a pattern can have more than one first and last element, example (A|B)(C|D)
-    vector<pair<vector<string>, vector<string>>> firstAndLastSymbols = {  
-        {{"M"}, {"H"}}, 
-        {{"T"}, {"M"}},
-        {{"H"}, {"V"}},
-        {{"T"}, {"C"}},
-        {{"H"}, {"C"}}
-    };
+    // vector<pair<vector<string>, vector<string>>> firstAndLastSymbols = {  
+    //     {{"M"}, {"T"}}, 
+    //     {{"M"}, {"C"}},
+    //     {{"M"}, {"H"}},
+    //     {{"M"}, {"V"}},
+    //     {{"M", "T"}, {"C"}},
+    //     {{"M", "T"}, {"H", "V"}}
+    // };
+
     size_t numTests = patterns.size();
-    int numExecutionsPerTest = 3;
+    int numExecutionsPerTest = 2;
     int insertBatchSize = 1000;
     int maxIndex = get<int>(client.executeQuery("SELECT max("+column+") FROM " + catalogAndSchema + "." + tableName)[0][0]);
     BenchmarkUtils butils(tableName, benchmarkTableName, catalogAndSchema, client);
@@ -120,13 +132,15 @@ void benchmark(const CLIParams& params) {
     }
 
     // --- main execution ---
-    for (int j = 0; j < numExecutionsPerTest; ++j) {    // execute each test n times
-        for (int tws : differentTws) {                  // for each test, try different time window sizes
-            duration<double> dbrexTotalLatency(0.0);
-            duration<double> mrTotalLatency(0.0);
+    for(size_t i = params.benchmarkTestNum; i < numTests; ++i) {
+        for(int j = 0; j < numExecutionsPerTest; ++j) {    // execute each test n times
+            size_t twNum = 0;
+            for(int tws : differentTws) {                  // for each test, try different time window sizes
+                duration<double> dbrexTotalLatency(0.0);
+                duration<double> mrTotalLatency(0.0);
+                duration<double> sjTotalLatency(0.0);
 
-            size_t benchmarkTestNum = params.benchmarkTestNum;
-            for (size_t i = benchmarkTestNum; i < numTests; ++i) {
+                cout << "Starting test " << to_string(i) << " | TWS: " << to_string(tws) << ", execution number: " << to_string(j) << endl;
                 const string& benchmarkFilePath = benchmarkResultsDirectory + "/" + whitespaceReplacedPatterns[i] + ".csv";
                 SQLUtils utils(benchmarkTableName, outputTableName, catalogAndSchema, allDfaData[i], client);
 
@@ -136,11 +150,13 @@ void benchmark(const CLIParams& params) {
                     string testId = to_string(processedIndex) + "_" + to_string(tws);   // as the same test gets executed n times -> group them together
 
                     // --- DBrex benchmarking ---
+                    cout << "Starting DBrex..." << endl;
                     auto dbrexStart = high_resolution_clock::now();
                     string dbrexTimestamp = getTimestamp();
                     benchmarkDBrex(catalogAndSchema, benchmarkTableName, outputTableName, processedIndex, column, tws, defines[i], allDfaData[i], utils, client);
                     auto dbrexEnd = high_resolution_clock::now();
-                    
+                    cout << "Finished DBrex" << endl;
+
                     duration<double> dbrexLatency = dbrexEnd - dbrexStart;
                     dbrexTotalLatency += dbrexLatency;
                     size_t memory = butils.getUsedMemory(utils);
@@ -150,27 +166,46 @@ void benchmark(const CLIParams& params) {
                     vector<string> dbrexRow = {"dbrex", dbrexTimestamp, to_string(processedIndex), to_string(insertBatchSize), to_string(tws), to_string(dbrexTotalLatency.count()),
                     to_string(dbrexLatency.count()), to_string(throughput), to_string(memory), testId};
                     appendToCSV(benchmarkFilePath, dbrexRow, {});
+                    // ---------------------------
                     
-                    // --- MATCH_RECOGNIZE benchmarking ---
-                    auto mrStart = high_resolution_clock::now();
-                    string mrTimestamp = getTimestamp();
-                    butils.benchmarkMR(utils, benchmarkTableName, patterns[i], column, defines[i], firstAndLastSymbols[i], tws, insertBatchSize);
-                    auto mrEnd = high_resolution_clock::now();
-                    
-                    duration<double> mrLatency = mrEnd - mrStart;
-                    mrTotalLatency += mrLatency;
+                    // --- Self JOINS benchmarking ---
+                    cout << "Starting Self JOINS..." << endl;
+                    string sjTimestamp = getTimestamp();
+                    duration<double> sjLatency = butils.benchmarkSelfJoins(i, twNum);
+                    cout << "Finished Self JOINS" << endl;
+
+                    sjTotalLatency += sjLatency;
                     
                     // store to csv
-                    vector<string> mrRow = {"MATCH_RECOGNIZE", mrTimestamp, to_string(processedIndex), to_string(insertBatchSize), to_string(tws), to_string(mrTotalLatency.count()),
-                    to_string(mrLatency.count()), to_string(-1), to_string(-1), testId};
-                    appendToCSV(benchmarkFilePath, mrRow, {});
-                    // ------------------------------------
+                    vector<string> sjRow = {"self_joins", sjTimestamp, to_string(processedIndex), to_string(insertBatchSize), to_string(tws), to_string(sjTotalLatency.count()),
+                    to_string(sjLatency.count()), to_string(-1), to_string(-1), testId};
+                    appendToCSV(benchmarkFilePath, sjRow, {});
+                    // -------------------------------
+
+                    // // --- MATCH_RECOGNIZE benchmarking ---
+                    // cout << "Starting MATCH_RECOGNIZE..." << endl;
+                    // auto mrStart = high_resolution_clock::now();
+                    // string mrTimestamp = getTimestamp();
+                    // butils.benchmarkMR(utils, benchmarkTableName, patterns[i], column, defines[i], firstAndLastSymbols[i], tws, insertBatchSize);
+                    // auto mrEnd = high_resolution_clock::now();
+                    // cout << "Finished MATCH_RECOGNIZE" << endl;
+
+                    // duration<double> mrLatency = mrEnd - mrStart;
+                    // mrTotalLatency += mrLatency;
+                    
+                    // // store to csv
+                    // vector<string> mrRow = {"MATCH_RECOGNIZE", mrTimestamp, to_string(processedIndex), to_string(insertBatchSize), to_string(tws), to_string(mrTotalLatency.count()),
+                    // to_string(mrLatency.count()), to_string(-1), to_string(-1), testId};
+                    // appendToCSV(benchmarkFilePath, mrRow, {});
+                    // // ------------------------------------
                 }
 
                 // Clean up after all iterations for this test
                 deleteSQLUtilsJSONs();
                 butils.deleteBenchmarkTableEntries(benchmarkTableName);
                 butils.deleteBenchmarkTableEntries(outputTableName);
+                cout << "Finished test " << to_string(i) << " | TWS: " << to_string(tws) << ", execution number: " << to_string(j) << endl;
+                twNum++;
             }
         }
     }
