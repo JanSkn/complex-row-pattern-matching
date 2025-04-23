@@ -45,8 +45,7 @@ void benchmark(const CLIParams& params) {
     vector<string> patterns = {
         "M T",
         "M T C",
-        "M T C H"
-        "M T C H V"
+        "M T C H",
         "(M | T) C",
         "(M | T) C (H | V)"
     };
@@ -65,13 +64,6 @@ void benchmark(const CLIParams& params) {
             {"T", "T.category = 'Theft in / from a motor vehicle'"},
             {"C", "C.category = 'Confirmed Theft'"},
             {"H", "H.category = 'Home Invasion'"}
-        },
-        {   
-            {"M", "M.category = 'Mischief'"},
-            {"T", "T.category = 'Theft in / from a motor vehicle'"},
-            {"C", "C.category = 'Confirmed Theft'"},
-            {"H", "H.category = 'Home Invasion'"},
-            {"V", "V.category = 'Motor vehicle theft'"}
         },
         {   
             {"M", "M.category = 'Mischief'"},
@@ -100,7 +92,7 @@ void benchmark(const CLIParams& params) {
 
     size_t numTests = patterns.size();
     int numExecutionsPerTest = 2;
-    int insertBatchSize = 1000;
+    int insertBatchSize = 14000;
     int maxIndex = get<int>(client.executeQuery("SELECT max("+column+") FROM " + catalogAndSchema + "." + tableName)[0][0]);
     BenchmarkUtils butils(tableName, benchmarkTableName, catalogAndSchema, client);
     butils.deleteBenchmarkTableEntries(benchmarkTableName);

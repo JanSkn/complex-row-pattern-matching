@@ -212,41 +212,6 @@ duration<double> BenchmarkUtils::benchmarkSelfJoins(const size_t& testNum, const
         "WHERE M.category = 'Mischief'"}
         },
 
-        {{"SELECT M.*, T.*, C.*, H.*, V.* "
-        "FROM postgres.public.crimedatabenchmark M "
-        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
-        "AND T.id BETWEEN M.id AND M.id + 49 "
-        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
-        "AND C.id BETWEEN M.id AND M.id + 49 "
-        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
-        "AND H.id BETWEEN M.id AND M.id + 49 "
-        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
-        "AND V.id BETWEEN M.id AND M.id + 49 "
-        "WHERE M.category = 'Mischief'"},
-        {"SELECT M.*, T.*, C.*, H.*, V.* "
-        "FROM postgres.public.crimedatabenchmark M "
-        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
-        "AND T.id BETWEEN M.id AND M.id + 99 "
-        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
-        "AND C.id BETWEEN M.id AND M.id + 99 "
-        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
-        "AND H.id BETWEEN M.id AND M.id + 99 "
-        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
-        "AND V.id BETWEEN M.id AND M.id + 99 "
-        "WHERE M.category = 'Mischief'"},
-        {"SELECT M.*, T.*, C.*, H.*, V.* "
-        "FROM postgres.public.crimedatabenchmark M "
-        "JOIN postgres.public.crimedatabenchmark T ON T.category = 'Theft in / from a motor vehicle' "
-        "AND T.id BETWEEN M.id AND M.id + 199 "
-        "JOIN postgres.public.crimedatabenchmark C ON C.category = 'Confirmed Theft' "
-        "AND C.id BETWEEN M.id AND M.id + 199 "
-        "JOIN postgres.public.crimedatabenchmark H ON H.category = 'Home Invasion' "
-        "AND H.id BETWEEN M.id AND M.id + 199 "
-        "JOIN postgres.public.crimedatabenchmark V ON V.category = 'Motor vehicle theft' "
-        "AND V.id BETWEEN M.id AND M.id + 199 "
-        "WHERE M.category = 'Mischief'"}
-        },
-
         // disjunction --> >1 JOIN requests
         {{"SELECT M.*, C.* "
         "FROM postgres.public.crimedatabenchmark M "
